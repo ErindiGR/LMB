@@ -36,6 +36,9 @@ inline ao_calc_config_s default_ao_config =
 .num_rays = 64
 };
 
+/**
+* @brief Calculates Ambient occlusion
+*/
 class AOCalculator : public JobBaseCalculator
 {
 
@@ -49,28 +52,24 @@ public:
      * that emitted the ray
      */
     AOCalculator(const ao_calc_config_s &info)
+    : m_num_rays(info.num_rays)
+    , m_ray_distance(info.ray_distance)
+    , m_max_angle(info.max_angle)
+    , m_bias(info.bias)
     {
-        m_num_rays = info.num_rays;
-        m_ray_distance = info.ray_distance;
-        m_max_angle = info.max_angle;
-        m_bias = info.bias;
     }
 
     void StartCalc();
-
 
     vec4 CalcPixel(
         const int x,
         const int y,
         const vec3 &world_pos,
-        const vec3 &world_norm
-    );
-
+        const vec3 &world_norm);
 
     const std::vector<Ray> GenRays(
         const vec3 &pos,
-        const vec3 &norm
-    )const;
+        const vec3 &norm)const;
 
 
 protected:

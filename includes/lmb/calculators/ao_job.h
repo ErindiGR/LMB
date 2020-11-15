@@ -12,8 +12,10 @@ namespace LMB
 
 class AOJob : public Job
 {
-    size_t m_x_start,m_y_start;
-    size_t m_x_end,m_y_end;
+    size_t m_x_start;
+    size_t m_y_start;
+    size_t m_x_end;
+    size_t m_y_end;
     class AOCalculator* m_aocalc;
     std::shared_ptr<Lightmap> m_lightmap;
 
@@ -24,8 +26,7 @@ public:
         const size_t y_start,
         const size_t x_end,
         const size_t y_end,
-        class AOCalculator* aocalc
-    );
+        class AOCalculator* aocalc);
 
     void Execute();
 };

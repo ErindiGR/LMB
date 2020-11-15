@@ -14,18 +14,17 @@ class Ray
 
 public:
 
-    Ray(
-        const vec3& start,
-        const vec3& end
-    ):
-    m_start(start),
-    m_end(end)
-    {}
+    Ray(const vec3& start,const vec3& end)
+    : m_start(start)
+    , m_end(end)
+    {
+    }
 
-    Ray():
-    m_start(0),
-    m_end(0)
-    {}
+    Ray()
+    : m_start(0)
+    , m_end(0)
+    {
+    }
 
     inline const vec3& GetStart() const
     {
@@ -54,12 +53,12 @@ public:
 
     inline const vec3 GetVec() const
     {
-        return m_end-m_start;
+        return m_end - m_start;
     }
 
     inline const real_t GetLength() const
     {
-        return glm::length(m_end-m_start);
+        return glm::length(m_end - m_start);
     }
 
 protected:

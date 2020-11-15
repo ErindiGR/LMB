@@ -16,8 +16,7 @@ DLJob::DLJob(
     const bitmap_size_t y_start,
     const bitmap_size_t x_end,
     const bitmap_size_t y_end,
-    DirectLightCalculator* calc
-)
+    DirectLightCalculator* calc)
 {
     m_x_start = x_start;
     m_y_start = y_start;
@@ -36,12 +35,8 @@ void DLJob::Execute()
             real_t xf = ((real_t)x + to_real(0.5))/(real_t)m_lightmap->GetColor().GetWidth();
             real_t yf = ((real_t)y + to_real(0.5))/(real_t)m_lightmap->GetColor().GetHeight();
 
-            const vec4 direct = m_calc->CalcPixel(
-                x,
-                y,
-                m_lightmap->GetPos().GetPixel(xf,yf),
-                m_lightmap->GetNorm().GetPixel(xf,yf)
-            );
+            const vec4 direct = m_calc->CalcPixel(x,y,
+                m_lightmap->GetPos().GetPixel(xf,yf),m_lightmap->GetNorm().GetPixel(xf,yf));
             
             const vec4 color = m_lightmap->GetColor().GetPixel(x,y);
             m_lightmap->GetColor().SetPixel(x,y,m_calc->GetBlend()->Blend(color,direct));
@@ -51,19 +46,15 @@ void DLJob::Execute()
 void DirectLightCalculator::StartCalc()
 {
 
-    bitmap_size_t chunk_size = std::max((int)(m_lightmap->GetColor().GetWidth()/(JobManager::Get()->GetNumThreads()*2)),1);
+    bitmap_size_t chunk_size = std::max(
+        (int)(m_lightmap->GetColor().GetWidth()/(JobManager::Get()->GetNumThreads()*2)),1);
 
     for(bitmap_size_t x=0;x<m_lightmap->GetColor().GetWidth()/chunk_size;x++)
     {
         for(bitmap_size_t y=0;y<m_lightmap->GetColor().GetHeight()/chunk_size;y++)
         {
             std::shared_ptr<DLJob> job = std::make_shared<DLJob>(
-                x*chunk_size,
-                y*chunk_size,
-                (x+1)*chunk_size,
-                (y+1)*chunk_size,
-                this
-            );
+                x*chunk_size,y*chunk_size,(x+1)*chunk_size,(y+1)*chunk_size,this);
 
             m_jobs.push_back(job);
             JobManager::Get()->Push(std::static_pointer_cast<Job>(job));
@@ -71,14 +62,11 @@ void DirectLightCalculator::StartCalc()
     }
 }
 
-
-
 vec4 DirectLightCalculator::CalcPixel(
-        const int x,
-        const int y,
-        const vec3 &world_pos,
-        const vec3 &world_norm
-)
+    const int x,
+    const int y,
+    const vec3 &world_pos,
+    const vec3 &world_norm)
 {
     if(glm::length(world_pos)<=to_real(0.0))
         return vec4(0);
@@ -101,13 +89,11 @@ vec4 DirectLightCalculator::CalcPixel(
     return vec4(ret_color,1);
 }
 
-
 std::vector<Ray> DirectLightCalculator::GenRays(
     const Ray &ray,
     const real_t softness,
     const vec3 &pos,
-    const vec3 &norm
-)
+    const vec3 &norm)
 {
     std::vector<Ray> rays(m_num_rays,ray);
 
@@ -135,21 +121,17 @@ std::vector<Ray> DirectLightCalculator::GenRays(
 const vec3 DirectLightCalculator::CalcDirectionalLight(
     const vec3 &world_pos,
     const vec3 &world_norm,
-    const size_t light_index
-)
+    const size_t light_index)
 {
     const vec3 &light_dir = m_lights[light_index].GetDir();
     const vec3 &light_color = m_lights[light_index].GetColor();
     const real_t light_softness = m_lights[light_index].GetSoftness();
 
-    const Ray ray(
-        world_pos + world_norm * m_bias,
-        world_pos + light_dir * m_max_ray_distance
-    );
+    const Ray ray(world_pos + world_norm * m_bias,
+        world_pos + light_dir * m_max_ray_distance);
 
     const std::vector<Ray> rays = std::move(
-        GenRays(ray,light_softness,world_pos,world_norm)
-    );
+        GenRays(ray,light_softness,world_pos,world_norm));
 
     const real_t ray_contribute = to_real(1.0)/(real_t)rays.size();
 
@@ -174,12 +156,10 @@ const vec3 DirectLightCalculator::CalcDirectionalLight(
     return ret;
 }
 
-
 const vec3 DirectLightCalculator::CalcPointLight(
     const vec3 &world_pos,
     const vec3 &world_norm,
-    const size_t light_index
-)
+    const size_t light_index)
 {
     const vec3 &light_pos = m_lights[light_index].GetPos();
     const vec3 &light_color = m_lights[light_index].GetColor();

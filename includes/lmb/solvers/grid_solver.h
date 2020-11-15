@@ -18,25 +18,28 @@ class GridCell
 public:
 
     GridCell(const AABB3D &bbox)
+    : m_bbox(bbox)
+    , m_triangle_indexes()
     {
-        m_bbox = bbox;
     }
 
     GridCell()
+    : m_bbox()
+    , m_triangle_indexes()
     {
     }
 
-    inline void AddTriangle(size_t index)
+    inline void AddTriangle(const size_t index)
     {
         m_triangle_indexes.push_back(index);
     }
 
-    inline const AABB3D& GetAABB()const
+    inline const AABB3D& GetAABB() const
     {
         return m_bbox;
     }
 
-    inline const std::vector<size_t> &GetTriangles()const
+    inline const std::vector<size_t> &GetTriangles() const
     {
         return m_triangle_indexes;
     }
@@ -49,11 +52,15 @@ protected:
 };
 
 
-
+/**
+* @brief This solver uses a 3 dimensional grid of axis aligned
+* bounding boxes in a grid to speed up the ray-world intersection
+*/
 class GridSolver : public DefaultSolver
 {
 
 public:
+    
     /**
      * @brief Construct a new Grid Solver object
      * 
@@ -61,14 +68,24 @@ public:
      * the scene on each dimension
      */
     GridSolver(const uint16_t num_grid_cells)
+    : m_num_cells(num_grid_cells)
     {
-        m_num_cells = num_grid_cells;
     }
 
+    /**
+    * @brief creates the grid and assigns the triangles to each grid cell
+    */
     void Gen();
 
+    /**
+    * @brief checks which triangles are inside the grid cell and adds them
+    * to it.
+    */
     void GenCellTriangles(const size_t index);
 
+    /**
+    * @brief find the bounds of the world
+    */
     const AABB3D GenWorldAABB() const;
 
     const bool Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt)const;
@@ -79,7 +96,6 @@ public:
 protected:
 
     std::vector<GridCell> m_grid;
-
     size_t m_num_cells;
 };
 

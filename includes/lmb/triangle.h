@@ -74,16 +74,19 @@ public:
 		if(!IntersectAABBPoint(m_uv_bb,p))
 			return false;
 
-		real_t u=0,v=0,w=0;
+		real_t u = 0;
+		real_t v = 0;
+		real_t w = 0;
+
 		Barycentric(p,m_uv[0],m_uv[1],m_uv[2],u,v,w);
 
-		if(	u >= to_real(1.0) || u <= to_real(0.0) ||
-			v >= to_real(1.0) || v <= to_real(0.0) ||
-			w >= to_real(1.0) || w <= to_real(0.0))
+		if(	u >= to_real(1.01) || u <= to_real(-0.01) ||
+			v >= to_real(1.01) || v <= to_real(-0.01) ||
+			w >= to_real(1.01) || w <= to_real(-0.01))
 			return false;
 
-
 		out_uvw = vec3(u,v,w);
+
 		return true;
 	}
 
@@ -93,6 +96,7 @@ public:
 			return false;
 
 		real_t u=0,v=0,w=0;
+
 		Barycentric(p,m_uv2[0],m_uv2[1],m_uv2[2],u,v,w);
 
 		if(	u >= to_real(1.01) || u <= to_real(-0.01) ||
@@ -100,17 +104,14 @@ public:
 			w >= to_real(1.01) || w <= to_real(-0.01))
 			return false;
 
-
 		out_uvw = vec3(u,v,w);
+
 		return true;
 	}
 
-
 	vec3 BarycentricToPos(const vec3& uvw) const
 	{
-		return 	m_positions[0] * uvw[0] +
-				m_positions[1] * uvw[1] +
-				m_positions[2] * uvw[2];
+		return 	m_positions[0] * uvw[0] + m_positions[1] * uvw[1] + m_positions[2] * uvw[2];
 	}
 
 	vec3 BarycentricToNormal(const vec3& uvw) const
@@ -121,12 +122,8 @@ public:
 		//		 m_normals[2]*w;
 
 		return glm::triangleNormal(
-			m_positions[0],
-			m_positions[1],
-			m_positions[2]
-		);
+			m_positions[0],m_positions[1],m_positions[2]);
 	}
-
 
 	inline void GenAABB()
 	{

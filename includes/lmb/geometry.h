@@ -20,7 +20,11 @@ inline const bool PointInsideBox(const vec3 &point,const vec3 &min,const vec3 &m
 
 
 
-inline const real_t RayBoxIntersect(const vec3 &rpos,const vec3 &rdir,const vec3 &vmin,const vec3 &vmax)
+inline const real_t RayBoxIntersect(
+    const vec3 &rpos,
+    const vec3 &rdir,
+    const vec3 &vmin,
+    const vec3 &vmax)
 {
     real_t t1 = (vmin.x - rpos.x) / rdir.x;
     real_t t2 = (vmax.x - rpos.x) / rdir.x;
@@ -53,7 +57,8 @@ inline const real_t RayBoxIntersect(const vec3 &rpos,const vec3 &rdir,const vec3
 
 
 //source: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
-inline const bool Intersect2AABB3D(const AABB3D &a,const AABB3D &b) {
+inline const bool Intersect2AABB3D(const AABB3D &a,const AABB3D &b)
+{
   return (a.GetMin().x <= b.GetMax().x && a.GetMax().x >= b.GetMin().x) &&
          (a.GetMin().y <= b.GetMax().y && a.GetMax().y >= b.GetMin().y) &&
          (a.GetMin().z <= b.GetMax().z && a.GetMax().z >= b.GetMin().z);
@@ -64,7 +69,8 @@ inline const bool Intersect2AABB3D(const AABB3D &a,const AABB3D &b) {
 
 
 //source: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
-inline const bool Intersect2AABB2D(const AABB2D &a,const AABB2D &b) {
+inline const bool Intersect2AABB2D(const AABB2D &a,const AABB2D &b)
+{
   return (a.GetMin().x <= b.GetMax().x && a.GetMax().x >= b.GetMin().x) &&
          (a.GetMin().y <= b.GetMax().y && a.GetMax().y >= b.GetMin().y);
 }
@@ -75,12 +81,17 @@ inline const bool Intersect2AABB2D(const AABB2D &a,const AABB2D &b) {
 
 #define MOLLER_TRUMBORE
 #define CULLING
-const real_t kEpsilon = to_real(1.0)/(real_t)(1024*16);
+const real_t kEpsilon = to_real(1.0) / to_real(1024*16);
 
 inline bool rayTriangleIntersect( 
-    const vec3 &orig, const vec3 &dir, 
-    const vec3 &v0, const vec3 &v1, const vec3 &v2, 
-    real_t &t, real_t &u, real_t &v) 
+    const vec3 &orig,
+    const vec3 &dir, 
+    const vec3 &v0,
+    const vec3 &v1,
+    const vec3 &v2, 
+    real_t &t,
+    real_t &u,
+    real_t &v) 
 { 
 #ifdef MOLLER_TRUMBORE 
     vec3 v0v1 = v1 - v0; 
@@ -99,11 +110,13 @@ inline bool rayTriangleIntersect(
  
     vec3 tvec = orig - v0; 
     u = glm::dot(tvec,pvec) * invDet; 
-    if (u < 0 || u > 1) return false; 
+    if (u < to_real(0) || u > to_real(1))
+        return false; 
  
     vec3 qvec = glm::cross(tvec,v0v1); 
     v = glm::dot(dir,qvec) * invDet; 
-    if (v < 0 || u + v > 1) return false; 
+    if (v < to_real(0) || u + v > to_real(1))
+        return false; 
  
     t = glm::dot(v0v2,qvec) * invDet; 
  
@@ -120,14 +133,13 @@ inline bool rayTriangleIntersect(
 https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 */
 static inline void Barycentric(
-	const vec2& p, 
-	const vec2& a,
-	const vec2& b,
-	const vec2& c,
- 	real_t &u,
-	real_t &v,
-	real_t &w
-)
+    const vec2 &p, 
+    const vec2 &a,
+    const vec2 &b,
+    const vec2 &c,
+    real_t &out_u,
+    real_t &out_v,
+    real_t &out_w)
 {
     vec2 v0 = b - a, v1 = c - a, v2 = p - a;
     real_t d00 = glm::dot(v0, v0);
@@ -136,9 +148,32 @@ static inline void Barycentric(
     real_t d20 = glm::dot(v2, v0);
     real_t d21 = glm::dot(v2, v1);
     real_t denom = d00 * d11 - d01 * d01;
-    v = (d11 * d20 - d01 * d21) / denom;
-    w = (d00 * d21 - d01 * d20) / denom;
-    u = to_real(1.0) - v - w;
+    out_v = (d11 * d20 - d01 * d21) / denom;
+    out_w = (d00 * d21 - d01 * d20) / denom;
+    out_u = to_real(1.0) - v - w;
+}
+
+/*source:
+https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+*/
+static inline void Barycentric(
+    const vec2 &p, 
+    const std::array<vec2,3> &triangle,
+    vec3 &out_uvw)
+{
+    vec2 v0 = triangle[1] - triangle[0];
+    vec2 v1 = triangle[2] - triangle[0];
+    vec2 v2 = p - triangle[0];
+
+    real_t d00 = glm::dot(v0, v0);
+    real_t d01 = glm::dot(v0, v1);
+    real_t d11 = glm::dot(v1, v1);
+    real_t d20 = glm::dot(v2, v0);
+    real_t d21 = glm::dot(v2, v1);
+    real_t denom = d00 * d11 - d01 * d01;
+    out_uvw.y = (d11 * d20 - d01 * d21) / denom;
+    out_uvw.z = (d00 * d21 - d01 * d20) / denom;
+    out_uvw.x = to_real(1.0) - out_uvw.y - out_uvw.z;
 }
 
 

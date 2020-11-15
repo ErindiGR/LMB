@@ -46,9 +46,9 @@ vec4 AOCalculator::CalcPixel(
     const int x,
     const int y,
     const vec3 &world_pos,
-    const vec3 &world_norm
-)
+    const vec3 &world_norm)
 {
+
     if(glm::length(world_pos)<=to_real(0.0))
         return vec4(0);
     
@@ -82,8 +82,7 @@ vec4 AOCalculator::CalcPixel(
 
 const std::vector<Ray> AOCalculator::GenRays(
     const vec3 &pos,
-    const vec3 &norm
-)const
+    const vec3 &norm) const
 {
 
     std::vector<Ray> rays(m_num_rays);
@@ -103,9 +102,13 @@ const std::vector<Ray> AOCalculator::GenRays(
 
         vec3 dir = ray.GetDir();
 
-        const real_t angley = glm::radians(m_max_angle * (to_real(1.0)-dir.y) * (to_real(1.0)/(rand()%32-16.5f)) );
-        const real_t anglex = glm::radians(m_max_angle * (to_real(1.0)-dir.x) * (to_real(1.0)/(rand()%32-16.5f)) );
-        const real_t anglez = glm::radians(m_max_angle * (to_real(1.0)-dir.z) * (to_real(1.0)/(rand()%32-16.5f)) );
+        const real_t randx = to_real(1.0) / (rand() % 32 - to_real(16.5));
+        const real_t randy = to_real(1.0) / (rand() % 32 - to_real(16.5));
+        const real_t randz = to_real(1.0) / (rand() % 32 - to_real(16.5));
+
+        const real_t angley = glm::radians(m_max_angle * (to_real(1.0) - dir.y) * randx );
+        const real_t anglex = glm::radians(m_max_angle * (to_real(1.0) - dir.x) * randy );
+        const real_t anglez = glm::radians(m_max_angle * (to_real(1.0) - dir.z) * randz );
 
         dir = glm::rotate(dir,angley,vec3(0,1,0));
         dir = glm::rotate(dir,anglex,vec3(1,0,0));

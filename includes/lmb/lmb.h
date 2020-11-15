@@ -19,6 +19,15 @@ namespace LMB
 class LMBSession : public ICalculable
 {
 
+public:
+
+	struct change_flags_s
+	{
+		bool triangles:1;
+		bool lightmaps:1;
+		bool solver:1;
+		bool calculator:1;
+	};
 
 public:
 
@@ -37,7 +46,6 @@ public:
 	const size_t AddTriangle(const Triangle& tri);
 
 	const size_t AddLightmap(const size_t width, const size_t height);
-
 
 	inline void SetSolver(std::shared_ptr<Solver> &solver)
 	{
@@ -81,22 +89,12 @@ public:
 
 protected:
 
-	std::shared_ptr<PreInfoCalculator> m_pre_info_calc;
-	std::shared_ptr<Calculator> m_calc;
-	std::shared_ptr<Solver> 	m_solver;
-
-	std::vector<Triangle> m_triangles;
-	std::vector<std::shared_ptr<Lightmap>> m_lightmaps;
-
-	struct change_flags_s
-	{
-		bool triangles:1;
-		bool lightmaps:1;
-		bool solver:1;
-		bool calculator:1;
-	};
-
-	change_flags_s m_changes;
+	std::shared_ptr<PreInfoCalculator> 		m_pre_info_calc;
+	std::shared_ptr<Calculator> 			m_calc;
+	std::shared_ptr<Solver> 				m_solver;
+	std::vector<Triangle> 					m_triangles;
+	std::vector<std::shared_ptr<Lightmap>> 	m_lightmaps;
+	change_flags_s 							m_changes;
 
 };
 

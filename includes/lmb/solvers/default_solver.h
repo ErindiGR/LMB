@@ -11,7 +11,10 @@ namespace LMB
 
 
 
-
+/**
+* @brief This solver tests each triangle if it is intersecting
+* with the ray
+*/
 class DefaultSolver : public Solver
 {
 
@@ -25,8 +28,7 @@ public:
         const Ray &ray,
         const Triangle &tri,
         vec3 &out_uvw,
-        real_t &outt
-    )const;
+        real_t &outt)const;
 
 protected:
 

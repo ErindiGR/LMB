@@ -6,16 +6,12 @@
 namespace LMB
 {
 
-
+/**
+* @brief Calculates each pixel of a chunk of the lightmap
+* this way you dont need a mutex to lock the pixels
+*/
 class LightmapChunkJob : public Job
 {
-
-protected:
-    bitmap_size_t m_x_start;
-    bitmap_size_t m_y_start;
-    bitmap_size_t m_x_end;
-    bitmap_size_t m_y_end;
-    std::shared_ptr<Lightmap> m_lightmap;
 
 public:
 
@@ -24,8 +20,7 @@ public:
         const bitmap_size_t y_start,
         const bitmap_size_t x_end,
         const bitmap_size_t y_end,
-        const std::shared_ptr<Lightmap> &lightmap
-    )
+        const std::shared_ptr<Lightmap> &lightmap)
     {
         m_x_start  = x_start;
         m_y_start  = y_start;
@@ -47,6 +42,14 @@ public:
     }
 
     virtual void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y) =0;
+
+protected:
+
+    bitmap_size_t m_x_start;
+    bitmap_size_t m_y_start;
+    bitmap_size_t m_x_end;
+    bitmap_size_t m_y_end;
+    std::shared_ptr<Lightmap> m_lightmap;
 
 };
 

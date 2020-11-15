@@ -27,7 +27,7 @@ int main()
 	for(size_t j=0;j<obj_loader.LoadedMeshes.size();j++)
 	{
 
-		auto lightmap = lmb->AddLightmap(256,256);
+		auto lightmap = lmb->AddLightmap(32,32);
 
 		for(size_t i =0;i<obj_loader.LoadedMeshes[j].Indices.size();i+=3)
 		{

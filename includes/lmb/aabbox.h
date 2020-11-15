@@ -24,12 +24,12 @@ public:
 
     inline void SetMin(const T &min)
     {
-        m_min=min;
+        m_min = min;
     }
 
     inline void SetMax(const T &max)
     {
-        m_max=max;
+        m_max = max;
     }
 
 protected:

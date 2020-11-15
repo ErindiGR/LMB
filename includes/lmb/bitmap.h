@@ -32,6 +32,8 @@ public:
 		return ret;
 	}
 
+public:
+
 	uint8_t m_r,m_g,m_b,m_a;
 
 };
@@ -57,6 +59,8 @@ public:
 
 		return ret;
 	}
+
+public:
 
 	uint16_t m_r,m_g,m_b,m_a;
 
@@ -179,10 +183,11 @@ public:
 
 protected:
 
-	Flags m_flags;  
-	bitmap_size_t m_width;
-	bitmap_size_t m_height;
-	std::vector<T> m_pixels;
+	std::vector<T> 	m_pixels;  
+	bitmap_size_t 	m_width;
+	bitmap_size_t 	m_height;
+	Flags 			m_flags;
+	
 };
 
 

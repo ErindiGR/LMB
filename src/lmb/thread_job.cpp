@@ -6,8 +6,6 @@ namespace LMB
 {
 
 
-
-
 void JobManager::ThreadExec(size_t thread_index)
 {
     {
@@ -79,8 +77,6 @@ JobManager::~JobManager()
     End();
 }
 
-
-
 void JobManager::End()
 {
     m_end = true;
@@ -88,8 +84,6 @@ void JobManager::End()
         if(m_threads[i].joinable())
             m_threads[i].join();
 }
-
-
 
 void JobManager::Push(std::shared_ptr<Job> job)
 {
@@ -106,7 +100,6 @@ void JobManager::Push(std::shared_ptr<Job> job)
         }
     }
 }
-
 
 
 }

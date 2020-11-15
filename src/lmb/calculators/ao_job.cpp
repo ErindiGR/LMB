@@ -13,8 +13,7 @@ AOJob::AOJob(
     const size_t y_start,
     const size_t x_end,
     const size_t y_end,
-    AOCalculator* aocalc
-)
+    AOCalculator* aocalc)
 {
     m_x_start = x_start;
     m_y_start = y_start;

@@ -16,17 +16,14 @@ class Lightmap
 
 public:
 
-	Lightmap(const size_t width, const size_t height,const size_t index):
-	m_colors(width,height,vec4(0)),
-	m_positions(width,height,vec3(0)),
-	m_normals(width,height,vec3(0)),
-	m_index(index)
-	{}
+	Lightmap(const size_t width, const size_t height,const size_t index)
+	: m_colors(width,height,vec4(0))
+	, m_positions(width,height,vec3(0))
+	, m_normals(width,height
+	, vec3(0)),m_index(index)
+	{
 
-	void GenPosAndNorm(const std::vector<Triangle>& triangles);
-
-	void GenPixelPositions(const size_t x, const size_t y,const std::vector<Triangle>& triangles);
-	void GenPixelNormal(const size_t x, const size_t y,const std::vector<Triangle>& triangles);
+	}
 
 	inline Bitmap<vec3>& GetPos()
 	{
@@ -48,10 +45,16 @@ public:
 		return m_index;
 	}
 
+	void GenPosAndNorm(const std::vector<Triangle>& triangles);
+
+	void GenPixelPositions(const size_t x, const size_t y,const std::vector<Triangle>& triangles);
+	
+	void GenPixelNormal(const size_t x, const size_t y,const std::vector<Triangle>& triangles);
+
 
 protected:
 
-	size_t 			  m_index;
+	size_t 		 m_index;
 	Bitmap<vec4> m_colors;
 	Bitmap<vec3> m_positions;
 	Bitmap<vec3> m_normals;

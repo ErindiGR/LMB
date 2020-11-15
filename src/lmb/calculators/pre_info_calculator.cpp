@@ -12,18 +12,12 @@ PreInfoJob::PreInfoJob(
     const bitmap_size_t y_start,
     const bitmap_size_t x_end,
     const bitmap_size_t y_end,
-    PreInfoCalculator* calc
-):
-LightmapChunkJob(
-    x_start,
-    y_start,
-    x_end,
-    y_end,
-    calc->m_lightmap
-),
-m_calc(calc)
-{}
-
+    PreInfoCalculator* calc)
+: LightmapChunkJob(x_start,y_start,x_end,y_end,calc->m_lightmap)
+, m_calc(calc)
+{
+    
+}
 
 void PreInfoJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
 {

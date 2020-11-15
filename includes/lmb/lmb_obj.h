@@ -22,6 +22,7 @@ public:
 protected:
 
    LMBSession* m_lmb;
+   
 };
 
 }

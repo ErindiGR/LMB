@@ -81,12 +81,11 @@ public:
 
 protected:
 
-    Type      m_type;
-    real_t    m_softness;
-    vec3 m_position;
-    vec3 m_direction;
-    vec3 m_color;
-
+    vec3    m_position;
+    vec3    m_direction;
+    vec3    m_color;
+    real_t  m_softness;
+    type    m_type;
 };
 
 class DLJob : public Job
@@ -99,19 +98,18 @@ public:
         const bitmap_size_t y_start,
         const bitmap_size_t x_end,
         const bitmap_size_t y_end,
-        class DirectLightCalculator* calc
-    );
+        class DirectLightCalculator* calc);
 
     void Execute();
 
 protected:
 
+    std::shared_ptr<Lightmap> m_lightmap;
+    class DirectLightCalculator* m_calc;
     bitmap_size_t m_x_start;
     bitmap_size_t m_y_start;
     bitmap_size_t m_x_end;
     bitmap_size_t m_y_end;
-    class DirectLightCalculator* m_calc;
-    std::shared_ptr<Lightmap> m_lightmap;
 };
 
 
@@ -120,7 +118,7 @@ struct dl_config_s
     uint16_t    num_rays;
     real_t      max_ray_distance;
     real_t      bias;
-    vec3   ambient_color;
+    vec3        ambient_color;
 };
 
 dl_config_s default_dl_config
@@ -131,6 +129,10 @@ dl_config_s default_dl_config
 .ambient_color = vec3(to_real(0.2),to_real(0.2),to_real(0.3))
 };
 
+/**
+* @brief Calculates direct lighting from a light source
+* like a point light or a directional light
+*/
 class DirectLightCalculator : public JobBaseCalculator
 {
 
@@ -151,26 +153,23 @@ public:
         const bitmap_size_t x,
         const bitmap_size_t y,
         const vec3 &world_pos,
-        const vec3 &world_norm
-    );
+        const vec3 &world_norm);
 
     const vec3 CalcDirectionalLight(
         const vec3 &world_pos,
         const vec3 &world_norm,
-        const size_t light_index
-    );
+        const size_t light_index);
+
     const vec3 CalcPointLight(
         const vec3 &world_pos,
         const vec3 &world_norm,
-        const size_t light_index
-    );
+        const size_t light_index);
 
     std::vector<Ray> GenRays(
         const Ray &ray,
         const real_t softness,
         const vec3 &pos,
-        const vec3 &norm
-    );
+        const vec3 &norm);
 
     void AddLight(const Light &l)
     {
@@ -181,13 +180,12 @@ public:
 protected:
 
     friend DLJob;
-
-    uint16_t m_num_rays;
-    real_t m_max_ray_distance;
-    real_t m_bias;
-    vec3 m_ambient_color;
     
-    std::vector<Light> m_lights;
+    std::vector<Light>  m_lights;
+    vec3                m_ambient_color;
+    real_t              m_max_ray_distance;
+    real_t              m_bias;
+    uint16_t            m_num_rays;
 
 };
 
