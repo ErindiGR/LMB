@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lmb/calculators/job_base_calculator.h"
+#include "lmb/calculators/lightmap_chunks_job.h"
 #include "lmb/thread_job.h"
 #include "lmb/base_type.h"
 
@@ -18,16 +19,16 @@ class Light
 
 public:
 
-    enum Type
+    enum class EType
     {
         Directional,
         Point
     };
 
-    Light(const Type &type,const vec3 &color = vec3(1))
+    Light(const EType &type,const vec3 &color = vec3(1))
     {
-        m_type=type;
-        m_position= vec3(0);
+        m_type = type;
+        m_position = vec3(0);
         m_color = color;
         m_direction = vec3(1);
         m_softness = to_real(0.2);
@@ -48,7 +49,7 @@ public:
         return m_direction;
     }
 
-    const Type GetType()
+    const EType GetType()
     {
         return m_type;
     }
@@ -60,22 +61,22 @@ public:
 
     void SetDir(const vec3 &dir)
     {
-        m_direction=glm::normalize(dir);
+        m_direction = glm::normalize(dir);
     }
 
     void SetPos(const vec3 &pos)
     {
-        m_position=pos;
+        m_position = pos;
     }
 
     void SetColor(const vec3 &color)
     {
-        m_color=color;
+        m_color = color;
     }
 
     void SetSoftness(const real_t softness)
     {
-        m_softness=softness;
+        m_softness = softness;
     }
 
 
@@ -85,10 +86,10 @@ protected:
     vec3    m_direction;
     vec3    m_color;
     real_t  m_softness;
-    type    m_type;
+    EType   m_type;
 };
 
-class DLJob : public Job
+class DLJob final : public LightmapChunkJob
 {
 
 public:
@@ -100,20 +101,15 @@ public:
         const bitmap_size_t y_end,
         class DirectLightCalculator* calc);
 
-    void Execute();
+    void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
 
 protected:
 
-    std::shared_ptr<Lightmap> m_lightmap;
     class DirectLightCalculator* m_calc;
-    bitmap_size_t m_x_start;
-    bitmap_size_t m_y_start;
-    bitmap_size_t m_x_end;
-    bitmap_size_t m_y_end;
 };
 
 
-struct dl_config_s
+struct SDLCalcConfig
 {
     uint16_t    num_rays;
     real_t      max_ray_distance;
@@ -121,33 +117,32 @@ struct dl_config_s
     vec3        ambient_color;
 };
 
-dl_config_s default_dl_config
+inline SDLCalcConfig default_dl_config
 {
-.num_rays = 64,
+.num_rays = 128,
 .max_ray_distance = to_real(1000000.0),
 .bias = to_real(1.0)/to_real(1024.0),
-.ambient_color = vec3(to_real(0.2),to_real(0.2),to_real(0.3))
+.ambient_color = vec3(0)//vec3(to_real(0.1),to_real(0.1),to_real(0.15))
 };
 
 /**
-* @brief Calculates direct lighting from a light source
-* like a point light or a directional light
-*/
+ * @brief Calculates direct lighting from a light source
+ * like a point light or a directional light
+ */
 class DirectLightCalculator : public JobBaseCalculator
 {
 
 
 public:
 
-    DirectLightCalculator(const dl_config_s &config)
+    DirectLightCalculator(const SDLCalcConfig &config)
+    : m_config(config)
     {
-        m_num_rays = config.num_rays;
-        m_max_ray_distance = config.max_ray_distance;
-        m_bias = config.bias;
-        m_ambient_color = config.ambient_color;
     }
-
+    
+    //ICalculable
     void StartCalc();
+    //!ICalculable
 
     vec4 CalcPixel(
         const bitmap_size_t x,
@@ -169,7 +164,8 @@ public:
         const Ray &ray,
         const real_t softness,
         const vec3 &pos,
-        const vec3 &norm);
+        const vec3 &norm,
+        const Light::EType light_type);
 
     void AddLight(const Light &l)
     {
@@ -182,10 +178,7 @@ protected:
     friend DLJob;
     
     std::vector<Light>  m_lights;
-    vec3                m_ambient_color;
-    real_t              m_max_ray_distance;
-    real_t              m_bias;
-    uint16_t            m_num_rays;
+    SDLCalcConfig m_config;
 
 };
 

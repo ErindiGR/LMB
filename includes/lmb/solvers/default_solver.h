@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lmb/solver.h"
+#include "lmb/aabbox.h"
 
 #include <vector>
 
@@ -20,15 +21,21 @@ class DefaultSolver : public Solver
 
 public:
 
+    //Solver
     void Gen();
-
-    const bool Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt)const;
+    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;
+    //!Solver
 
     const bool IntersectTriangle(
         const Ray &ray,
         const Triangle &tri,
         vec3 &out_uvw,
-        real_t &outt)const;
+        real_t &outt) const;
+
+    /**
+     * @brief find the bounds of the world
+     */
+    const AABB3D GenWorldAABB() const;
 
 protected:
 

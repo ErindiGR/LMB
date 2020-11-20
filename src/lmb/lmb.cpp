@@ -17,10 +17,6 @@ const size_t LMBSession::AddTriangle(const Triangle& tri)
 	m_triangles.push_back(tri);
 
 	m_changes.triangles = true;
-	
-#if 1
-	Dumper::Push(tri);
-#endif
 
 	return ret;
 
@@ -31,13 +27,15 @@ const size_t LMBSession::AddTriangle(const Triangle& tri)
 
 const size_t LMBSession::AddLightmap(const size_t width, const size_t height)
 {
-	std::shared_ptr<Lightmap> ret = std::make_shared<Lightmap>(width,height,m_lightmaps.size()+1);
+	const size_t index = m_lightmaps.size();
+	
+	std::shared_ptr<Lightmap> ret = std::make_shared<Lightmap>(width,height,index);
 
 	m_lightmaps.push_back(ret);
 	
 	m_changes.lightmaps = true;
 
-	return m_lightmaps.size();
+	return index;
 }
 
 
@@ -131,7 +129,7 @@ const Calculator * LMBSession::GetCalculator()
 
 void Init()
 {
-	Dumper::Init("dump.dp");
+	
 }
 
 
@@ -139,7 +137,7 @@ void Init()
 
 void Term()
 {
-	Dumper::Term();
+
 }
 
 

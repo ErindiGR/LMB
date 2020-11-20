@@ -14,7 +14,7 @@ class CalcBlendSet
 
 public:
 
-    virtual vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    virtual const vec4 Blend(const vec4 &rh,const vec4 &lh) const
     {
         return lh;
     }
@@ -27,7 +27,7 @@ class CalcBlendMul : public CalcBlendSet
 
 public:
 
-    virtual vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
     {
         return rh * lh;
     };
@@ -40,9 +40,33 @@ class CalcBlendAdd : public CalcBlendSet
 
 public:
 
-    virtual vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
     {
         return rh + lh;
+    };
+
+};
+
+class CalcBlendMax : public CalcBlendSet
+{
+
+public:
+
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    {
+        return glm::max(rh,lh);
+    };
+
+};
+
+class CalcBlendAvrg : public CalcBlendSet
+{
+
+public:
+
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    {
+        return rh / to_real(2.0) + lh / to_real(2.0);
     };
 
 };

@@ -16,13 +16,21 @@ class Lightmap
 
 public:
 
-	Lightmap(const size_t width, const size_t height,const size_t index)
-	: m_colors(width,height,vec4(0))
-	, m_positions(width,height,vec3(0))
-	, m_normals(width,height
-	, vec3(0)),m_index(index)
+	enum class EFlags : unsigned char
 	{
+		UnUsed,
+		Used
+	};
 
+public:
+
+	Lightmap(const size_t width, const size_t height,const size_t index)
+	: m_colors(width,height,vec4(0,0,0,1))
+	, m_flags(width,height,EFlags::UnUsed)
+	, m_positions(width,height,vec3(0))
+	, m_normals(width,height,vec3(0))
+	, m_index(index)
+	{
 	}
 
 	inline Bitmap<vec3>& GetPos()
@@ -40,6 +48,11 @@ public:
 		return m_colors;
 	}
 
+	inline Bitmap<EFlags>& GetFlags()
+	{
+		return m_flags;
+	}
+
 	inline size_t GetIndex()
 	{
 		return m_index;
@@ -54,10 +67,11 @@ public:
 
 protected:
 
-	size_t 		 m_index;
-	Bitmap<vec4> m_colors;
-	Bitmap<vec3> m_positions;
-	Bitmap<vec3> m_normals;
+	size_t 		 	m_index;
+	Bitmap<vec4> 	m_colors;
+	Bitmap<EFlags>  m_flags;
+	Bitmap<vec3> 	m_positions;
+	Bitmap<vec3> 	m_normals;
 
 };
 

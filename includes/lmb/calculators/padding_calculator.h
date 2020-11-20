@@ -14,7 +14,7 @@ class PaddingCalculator : public Calculator
 
 public:
 
-    inline const vec4 GetPixelAvrg(const bitmap_size_t x,const bitmap_size_t y)
+    inline bool GetPixelAvrg(const bitmap_size_t x,const bitmap_size_t y,vec4 &out_color)
     {
         int n=0;
 
@@ -27,7 +27,7 @@ public:
         {
             for(bitmap_size_t sy= iy-1;sy<(iy+2);sy++)
             {
-                if(m_lightmap->GetColor().GetPixel(sx,sy).w != to_real(0.0))
+                if(m_lightmap->GetFlags().GetPixel(sx,sy) == Lightmap::EFlags::Used)
                 {
                     ++n;
                     col += m_lightmap->GetColor().GetPixel(sx,sy);
@@ -36,11 +36,13 @@ public:
         }
 
         if(n <=0)
-            return vec4(0,0,0,0);
+            return false;
 
         col /= n;
         col.w = 1;
-        return col;
+        out_color = col;
+
+        return true;
     }
 
     void StartCalc()
@@ -52,10 +54,14 @@ public:
             {
                 for(bitmap_size_t y=0;y<m_lightmap->GetColor().GetHeight();y++)
                 {
-                    if(m_lightmap->GetColor().GetPixel(x,y).w <= to_real(0.0))
+                    if(m_lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
                     {
-                        vec4 color = GetPixelAvrg(x,y);
-                        m_lightmap->GetColor().SetPixel(x,y,color);
+                        vec4 color(0);
+                        if(GetPixelAvrg(x,y,color))
+                        {
+                            m_lightmap->GetColor().SetPixel(x,y,color);
+                            m_lightmap->GetFlags().SetPixel(x,y,Lightmap::EFlags::Used);
+                        }
                     }
                 }   
             }

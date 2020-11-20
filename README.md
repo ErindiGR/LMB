@@ -3,8 +3,9 @@
 
 LMB is a c++ libaray that bakes lightmaps.
 The library is flexible and extendable and it alsow supports multithreading.\
-LMB supports direct lighting, ambient occlussion, denoising and more to come in the 
-future.You can also extend the fatrues on your own fairly easily.
+LMB supports direct lighting, ambient occlussion,
+indirect lighting, denoising and more to come in the 
+future.You can also extend the features on your own fairly easily.
 
 
 # Third Party Libraries
@@ -27,8 +28,7 @@ future.You can also extend the fatrues on your own fairly easily.
 
 # Upcoming Features
 
-* Indirect lighting.
-
+todo
 
 # Build
 

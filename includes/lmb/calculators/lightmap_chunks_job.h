@@ -29,7 +29,7 @@ public:
         m_lightmap = lightmap;
     }
 
-    void Execute()
+    /*void Execute()
     {
 
         for(bitmap_size_t x=m_x_start;x<m_x_end;x++)
@@ -37,6 +37,26 @@ public:
             for(bitmap_size_t y=m_y_start;y<m_y_end;y++)
             {
                 CalculatePixel(x,y);
+            }
+        }
+    }*/
+
+    void Execute()
+    {
+        bitmap_size_t x = m_x_start;
+        bitmap_size_t y = m_y_start;
+        
+        size_t num_loops = (m_x_end - m_x_start) * (m_y_end - m_y_start);
+        
+        for(size_t i = 0;i < num_loops;i++)
+        {
+            CalculatePixel(x,y);
+
+            ++x;
+            if(x >= m_x_end)
+            {
+                x = m_x_start;
+                ++y;
             }
         }
     }

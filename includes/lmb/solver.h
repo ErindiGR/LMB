@@ -15,6 +15,15 @@ class Solver : public LMBObject
 
 public:
 
+   struct SHitInfo
+   {
+      vec3     uvw;
+      real_t   t;
+      size_t   triangle_index;
+   };
+
+public:
+
 	/**
 	* @brief generates the structure needed for the solver
 	*/
@@ -23,7 +32,7 @@ public:
    /**
    * @brief intersects the ray with the world
    */
-   virtual const bool Intersect(const Ray &ray,vec3 &out_uvw,real_t &out_t) const = 0;
+   virtual const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const = 0;
 };
 
 }

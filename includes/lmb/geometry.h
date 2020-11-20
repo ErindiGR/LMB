@@ -3,6 +3,13 @@
 
 #include "base_type.h"
 #include "aabbox.h"
+#include "ray.h"
+
+#define GLM_FORCE_INLINE 
+#include <glm/gtx/component_wise.hpp>
+#undef GLM_FORCE_INLINE 
+
+#include <array>
 
 
 namespace LMB
@@ -26,35 +33,141 @@ inline const real_t RayBoxIntersect(
     const vec3 &vmin,
     const vec3 &vmax)
 {
-    real_t t1 = (vmin.x - rpos.x) / rdir.x;
-    real_t t2 = (vmax.x - rpos.x) / rdir.x;
-    real_t t3 = (vmin.y - rpos.y) / rdir.y;
-    real_t t4 = (vmax.y - rpos.y) / rdir.y;
-    real_t t5 = (vmin.z - rpos.z) / rdir.z;
-    real_t t6 = (vmax.z - rpos.z) / rdir.z;
+    const real_t t1 = (vmin.x - rpos.x) / rdir.x;
+    const real_t t2 = (vmax.x - rpos.x) / rdir.x;
+    const real_t t3 = (vmin.y - rpos.y) / rdir.y;
+    const real_t t4 = (vmax.y - rpos.y) / rdir.y;
+    const real_t t5 = (vmin.z - rpos.z) / rdir.z;
+    const real_t t6 = (vmax.z - rpos.z) / rdir.z;
+ 
+    const real_t aMin = t1 < t2 ? t1 : t2;
+    const real_t bMin = t3 < t4 ? t3 : t4;
+    const real_t cMin = t5 < t6 ? t5 : t6;
+ 
+    const real_t aMax = t1 > t2 ? t1 : t2;
+    const real_t bMax = t3 > t4 ? t3 : t4;
+    const real_t cMax = t5 > t6 ? t5 : t6;
+ 
+    const real_t fMax = aMin > bMin ? aMin : bMin;
+    const real_t fMin = aMax < bMax ? aMax : bMax;
 
-    real_t aMin = t1 < t2 ? t1 : t2;
-    real_t bMin = t3 < t4 ? t3 : t4;
-    real_t cMin = t5 < t6 ? t5 : t6;
+    const real_t t7 = fMax > cMin ? fMax : cMin;
+    const real_t t8 = fMin < cMax ? fMin : cMax;
 
-    real_t aMax = t1 > t2 ? t1 : t2;
-    real_t bMax = t3 > t4 ? t3 : t4;
-    real_t cMax = t5 > t6 ? t5 : t6;
+    const real_t t9 = (t8 < 0 || t7 > t8) ? -1 : t7;
 
-    real_t fMax = aMin > bMin ? aMin : bMin;
-    real_t fMin = aMax < bMax ? aMax : bMax;
+    return t9;
+}
 
-    real_t t7 = fMax > cMin ? fMax : cMin;
-    real_t t8 = fMin < cMax ? fMin : cMax;
+inline const real_t RayBoxIntersectFast(
+    const Ray &ray,
+    const AABB3D &aabb)
+{
 
-    real_t t9 = (t8 < 0 || t7 > t8) ? -1 : t7;
+    const vec3 &rpos = ray.GetStart();
+    const vec3 &rdir = ray.GetDir();
+    const vec3 &vmin = aabb.GetMin();
+    const vec3 &vmax = aabb.GetMax();
+
+    const real_t t1 = (vmin.x - rpos.x) / rdir.x;
+    const real_t t2 = (vmax.x - rpos.x) / rdir.x;
+    const real_t t3 = (vmin.y - rpos.y) / rdir.y;
+    const real_t t4 = (vmax.y - rpos.y) / rdir.y;
+    const real_t t5 = (vmin.z - rpos.z) / rdir.z;
+    const real_t t6 = (vmax.z - rpos.z) / rdir.z;
+ 
+    const real_t aMin = t1 < t2 ? t1 : t2;
+    const real_t bMin = t3 < t4 ? t3 : t4;
+    const real_t cMin = t5 < t6 ? t5 : t6;
+ 
+    const real_t aMax = t1 > t2 ? t1 : t2;
+    const real_t bMax = t3 > t4 ? t3 : t4;
+    const real_t cMax = t5 > t6 ? t5 : t6;
+ 
+    const real_t fMax = aMin > bMin ? aMin : bMin;
+    const real_t fMin = aMax < bMax ? aMax : bMax;
+
+    const real_t t7 = fMax > cMin ? fMax : cMin;
+    const real_t t8 = fMin < cMax ? fMin : cMax;
+
+    const real_t t9 = (t8 < 0 || t7 > t8) ? -1 : t7;
 
     return t9;
 }
 
 
+inline const real_t RayBoxIntersectFast2(
+    const Ray &ray,
+    const AABB3D &aabb)
+{
 
+    const vec3 &rpos = ray.GetStart();
+    const vec3 &rdir = ray.GetDir();
+    const vec3 &vmin = aabb.GetMin();
+    const vec3 &vmax = aabb.GetMax();
 
+    const vec3 a = (vmin - rpos) / rdir;
+    const vec3 b = (vmax - rpos) / rdir;
+
+    const vec3 min(
+        glm::min(a[0],b[0]),
+        glm::min(a[1],b[1]),
+        glm::min(a[2],b[2]));
+
+    const vec3 max(
+        glm::max(a[0],b[0]),
+        glm::max(a[1],b[1]),
+        glm::max(a[2],b[2]));
+
+    const real_t t7 = glm::compMax(min);
+    const real_t t8 = glm::compMin(max);
+
+    const real_t t9 = (t8 < 0 || t7 > t8) ? -1 : t7;
+
+    return t9;
+}
+
+inline const bool RayBoxIntersecFastBool(
+    const vec3 &rpos,
+    const vec3 &rdir,
+    const vec3 &vmin,
+    const vec3 &vmax,
+    real_t &out_t)
+{
+    vec3 dirfrac;
+    // r.dir is unit direction vector of ray
+    dirfrac.x = to_real(1.0) / rdir.x;
+    dirfrac.y = to_real(1.0) / rdir.y;
+    dirfrac.z = to_real(1.0) / rdir.z;
+    // lb is the corner of AABB with minimal coordinates - left bottom, rt is maximal corner
+    // r.org is origin of ray
+    real_t t1 = (vmin.x - rpos.x)*dirfrac.x;
+    real_t t2 = (vmax.x - rpos.x)*dirfrac.x;
+    real_t t3 = (vmin.y - rpos.y)*dirfrac.y;
+    real_t t4 = (vmax.y - rpos.y)*dirfrac.y;
+    real_t t5 = (vmin.z - rpos.z)*dirfrac.z;
+    real_t t6 = (vmax.z - rpos.z)*dirfrac.z;
+
+    real_t tmin = glm::max(glm::max(glm::min(t1, t2), glm::min(t3, t4)), glm::min(t5, t6));
+    real_t tmax = glm::min(glm::min(glm::max(t1, t2), glm::max(t3, t4)), glm::max(t5, t6));
+
+    // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
+    if (tmax < 0)
+    {
+        out_t = tmax;
+        return false;
+    }
+
+    // if tmin > tmax, ray doesn't intersect AABB
+    if (tmin > tmax)
+    {
+        out_t = tmax;
+        return false;
+    }
+
+    out_t = tmin;
+    return true;
+}
 
 //source: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 inline const bool Intersect2AABB3D(const AABB3D &a,const AABB3D &b)
@@ -150,7 +263,7 @@ static inline void Barycentric(
     real_t denom = d00 * d11 - d01 * d01;
     out_v = (d11 * d20 - d01 * d21) / denom;
     out_w = (d00 * d21 - d01 * d20) / denom;
-    out_u = to_real(1.0) - v - w;
+    out_u = to_real(1.0) - out_v - out_w;
 }
 
 /*source:

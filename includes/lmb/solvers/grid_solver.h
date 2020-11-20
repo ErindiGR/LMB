@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lmb/solvers/default_solver.h"
+#include "aabb_base_solver.h"
 #include "lmb/base_type.h"
 
 #include <vector>
@@ -56,7 +56,7 @@ protected:
 * @brief This solver uses a 3 dimensional grid of axis aligned
 * bounding boxes in a grid to speed up the ray-world intersection
 */
-class GridSolver : public DefaultSolver
+class GridSolver : public AABBBaseSolver
 {
 
 public:
@@ -72,6 +72,7 @@ public:
     {
     }
 
+    //Solver
     /**
     * @brief creates the grid and assigns the triangles to each grid cell
     */
@@ -82,16 +83,9 @@ public:
     * to it.
     */
     void GenCellTriangles(const size_t index);
+    //!Solver
 
-    /**
-    * @brief find the bounds of the world
-    */
-    const AABB3D GenWorldAABB() const;
-
-    const bool Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt)const;
-
-    const bool IntersectAABB3D(const Ray &ray,const AABB3D &bbox,real_t &outt)const;
-
+    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;
 
 protected:
 

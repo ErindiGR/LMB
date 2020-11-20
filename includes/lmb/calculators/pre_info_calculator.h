@@ -11,7 +11,7 @@ namespace LMB
 
 class PreInfoCalculator;
 
-class PreInfoJob : public LightmapChunkJob
+class PreInfoJob final : public LightmapChunkJob
 {
 public:
 

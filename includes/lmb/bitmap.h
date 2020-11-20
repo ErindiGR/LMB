@@ -85,6 +85,11 @@ inline const vec3 Lerp(const vec3 &lh,const vec3 &rh,const real_t t)
 	return glm::lerp(rh,lh,t);
 }
 
+inline const vec4 Lerp(const vec4 &lh,const vec4 &rh,const real_t t)
+{
+	return glm::lerp(rh,lh,t);
+}
+
 typedef int bitmap_size_t;
 
 template<typename T>
@@ -164,6 +169,14 @@ public:
 		m_pixels[ry * m_width + rx]  = val;
 	}
 
+	void Copy(const Bitmap<T> &bitmap)
+	{
+		m_pixels = bitmap.m_pixels;
+		m_width = bitmap.m_width;
+		m_height = bitmap.m_height;
+		m_flags = bitmap.m_flags;
+	}
+
 	T* GetData()
 	{
 		return m_pixels.data();
@@ -191,7 +204,7 @@ protected:
 };
 
 
-class BitmapUtil
+class BitmapUtils
 {
 
 public:

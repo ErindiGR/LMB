@@ -39,7 +39,7 @@ public:
                 if(sx == sy)
                     continue;
 
-                if(m_lightmap->GetColor().GetPixel(sx,sy).w != 0)
+                if(m_lightmap->GetFlags().GetPixel(sx,sy) == Lightmap::EFlags::Used)
                 {
                     ++n;
                     col +=m_lightmap->GetColor().GetPixel(sx,sy);
@@ -56,7 +56,7 @@ public:
 
     void PixelSimilarityBlur(const bitmap_size_t x,const bitmap_size_t y)
     {
-        if(m_lightmap->GetColor().GetPixel(x,y).w == 0)
+        if(m_lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
             return;
         
         const vec4 a = GetPixelAvrg(x,y);

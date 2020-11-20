@@ -9,14 +9,14 @@
 namespace LMB
 {
 
-
-
-
-const bool GridSolver::Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt) const
+const bool GridSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
 {
     Ray r = ray;
-    real_t t = 0;
-    vec3 uvw(0);
+    
+    real_t  t = 0;
+    size_t  index = 0;
+    vec3    uvw(0);
+    
     bool hit = false;
 
     auto &triangles = m_lmb->GetTriangles();
@@ -34,6 +34,7 @@ const bool GridSolver::Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt) cons
                 if(IntersectTriangle(r,triangles[cell_triangles[j]],uvw,t))
                 {
                     r.SetEnd(r.GetStart()+r.GetDir()* t);
+                    index = cell_triangles[j];
                     hit = true;
                 }
             }
@@ -43,43 +44,13 @@ const bool GridSolver::Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt) cons
 
     if(hit)
     {
-        outt = t;
-        out_uvw = uvw;
+        out_hit_info.t = t;
+        out_hit_info.uvw = uvw;
+        out_hit_info.triangle_index = index;
     }
-
-#if 1
-        Dumper::Push(r);
-#endif
 
     return hit;
 }
-
-
-
-
-
-
-const bool GridSolver::IntersectAABB3D(const Ray &ray,const AABB3D &bbox,real_t &outt)const
-{
-    real_t t=0;
-
-    if(PointInsideBox(ray.GetStart(),bbox.GetMin(),bbox.GetMax()))
-    {
-        outt=t;
-        return true;
-    }
-
-    t = RayBoxIntersect(ray.GetStart(),ray.GetDir(),bbox.GetMin(),bbox.GetMax());
-
-    if(t>0)
-    {
-        outt=t;
-        return true;
-    }
-
-    return false;
-}
-
 
 #define INCREMENT3D(x,y,z,count)\
 {\
@@ -95,11 +66,6 @@ const bool GridSolver::IntersectAABB3D(const Ray &ray,const AABB3D &bbox,real_t 
         ++z;\
     }\
 }
-
-
-
-
-
 
 void GridSolver::Gen()
 {
@@ -140,10 +106,6 @@ void GridSolver::Gen()
 
         if(m_grid[m_grid.size()-1].GetTriangles().size() <= 0)
             m_grid.pop_back();
-
-#if 1
-        Dumper::Push(m_grid[m_grid.size()-1]);
-#endif
 
         INCREMENT3D(x,y,z,m_num_cells)
     }
@@ -189,43 +151,6 @@ void GridSolver::GenCellTriangles(const size_t index)
         }
     }
 
-    //printf("count %d.\n",count);
-
 }
-
-
-
-
-
-const AABB3D GridSolver::GenWorldAABB() const
-{
-    vec3 min(FLT_MAX);
-    vec3 max(-FLT_MAX);
-
-    auto &triangles = m_lmb->GetTriangles();
-
-
-    for(size_t i = 0;i < triangles.size();i++)
-    {
-        for(size_t j = 0;j < 3;j++)
-		{
-			if(min[j]>triangles[i].GetAABB().GetMin()[j])
-				min[j] = triangles[i].GetAABB().GetMin()[j];
-			
-			if(max[j]<triangles[i].GetAABB().GetMax()[j])
-				max[j] = triangles[i].GetAABB().GetMax()[j];
-
-		}
-    }
-
-    AABB3D ret;
-    
-    ret.SetMax(max);
-    ret.SetMin(min);
-
-    return ret;
-}
-
-
 
 }

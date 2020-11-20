@@ -109,6 +109,7 @@ int main()
     bool grid = false;
     bool triangle_aabb = false;
 
+    int increase_amount = 32;
     int start = 0;
     int end = 10;
     int inverse_density = 10;
@@ -262,6 +263,13 @@ int main()
             ImGui::DragInt("end",&end);
 
             ImGui::DragInt("density",&inverse_density);
+
+            ImGui::DragInt("increase amount",&increase_amount);
+            if(ImGui::Button("increase"))
+            {
+                start += increase_amount;
+                end += increase_amount;
+            }
 
             if(ImGui::Button("rays"))
                 rays = !rays;

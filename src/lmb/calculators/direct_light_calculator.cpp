@@ -17,30 +17,26 @@ DLJob::DLJob(
     const bitmap_size_t x_end,
     const bitmap_size_t y_end,
     DirectLightCalculator* calc)
+    : LightmapChunkJob(x_start,y_start,x_end,y_end,calc->m_lightmap)
+    , m_calc(calc)
 {
-    m_x_start = x_start;
-    m_y_start = y_start;
-    m_x_end = x_end;
-    m_y_end = y_end;
-    m_calc = calc;
-    m_lightmap = calc->m_lightmap;
 }
 
-void DLJob::Execute()
+void DLJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
 {
+    auto &lightmap = LightmapChunkJob::m_lightmap;
 
-    for(bitmap_size_t x=m_x_start;x<m_x_end;x++)
-        for(bitmap_size_t y=m_y_start;y<m_y_end;y++)
-        {
-            real_t xf = ((real_t)x + to_real(0.5))/(real_t)m_lightmap->GetColor().GetWidth();
-            real_t yf = ((real_t)y + to_real(0.5))/(real_t)m_lightmap->GetColor().GetHeight();
+    if(lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
+        return;
 
-            const vec4 direct = m_calc->CalcPixel(x,y,
-                m_lightmap->GetPos().GetPixel(xf,yf),m_lightmap->GetNorm().GetPixel(xf,yf));
-            
-            const vec4 color = m_lightmap->GetColor().GetPixel(x,y);
-            m_lightmap->GetColor().SetPixel(x,y,m_calc->GetBlend()->Blend(color,direct));
-        }
+    const real_t xf = (x + to_real(0.5))/ to_real(lightmap->GetColor().GetWidth());
+    const real_t yf = (y + to_real(0.5))/ to_real(lightmap->GetColor().GetHeight());
+
+    const vec4 direct = m_calc->CalcPixel(x,y,
+        lightmap->GetPos().GetPixel(xf,yf),lightmap->GetNorm().GetPixel(xf,yf));
+    
+    const vec4 color = lightmap->GetColor().GetPixel(x,y);
+    lightmap->GetColor().SetPixel(x,y,m_calc->GetBlend()->Blend(color,direct));
 }
 
 void DirectLightCalculator::StartCalc()
@@ -68,18 +64,16 @@ vec4 DirectLightCalculator::CalcPixel(
     const vec3 &world_pos,
     const vec3 &world_norm)
 {
-    if(glm::length(world_pos)<=to_real(0.0))
-        return vec4(0);
     
-    vec3 ret_color(m_ambient_color);
+    vec3 ret_color(m_config.ambient_color);
 
     for(size_t i=0;i<m_lights.size();i++)
     {
-        if(m_lights[i].GetType() == Light::Directional)
+        if(m_lights[i].GetType() == Light::EType::Directional)
         {
             ret_color += CalcDirectionalLight(world_pos,world_norm,i);
         }
-        else if(m_lights[i].GetType() == Light::Point)
+        else if(m_lights[i].GetType() == Light::EType::Point)
         {
             ret_color += CalcPointLight(world_pos,world_norm,i);
         }
@@ -93,22 +87,37 @@ std::vector<Ray> DirectLightCalculator::GenRays(
     const Ray &ray,
     const real_t softness,
     const vec3 &pos,
-    const vec3 &norm)
+    const vec3 &norm,
+    const Light::EType light_type)
 {
-    std::vector<Ray> rays(m_num_rays,ray);
+    std::vector<Ray> rays(m_config.num_rays,ray);
 
-    const real_t s = softness * ray.GetLength();
+    real_t s = 0;
+    
+    if(light_type == Light::EType::Directional)
+    {
+       s = softness * ray.GetLength();
+    }
+    else if(light_type == Light::EType::Point)
+    {
+        s = softness * 20;
+    }
+
 
     for(size_t i=0;i<rays.size();i++)
     {
         Ray &r = rays[i];
 
         const vec3 pos = r.GetEnd();
+        
+        const real_t randx = ((rand() % 1024) - to_real(512.5)) / 512.5;
+        const real_t randy = ((rand() % 1024) - to_real(512.5)) / 512.5;
+        const real_t randz = ((rand() % 1024) - to_real(512.5)) / 512.5;
 
         const vec3 rand_pos(
-            s * (to_real(1.0)/(rand()%32-16.5f)),
-            s * (to_real(1.0)/(rand()%32-16.5f)),
-            s * (to_real(1.0)/(rand()%32-16.5f))
+            s * randx,
+            s * randy,
+            s * randz
         );
 
         r.SetEnd(pos + rand_pos);
@@ -127,11 +136,11 @@ const vec3 DirectLightCalculator::CalcDirectionalLight(
     const vec3 &light_color = m_lights[light_index].GetColor();
     const real_t light_softness = m_lights[light_index].GetSoftness();
 
-    const Ray ray(world_pos + world_norm * m_bias,
-        world_pos + light_dir * m_max_ray_distance);
+    const Ray ray(world_pos + world_norm * m_config.bias,
+        world_pos + light_dir * m_config.max_ray_distance);
 
     const std::vector<Ray> rays = std::move(
-        GenRays(ray,light_softness,world_pos,world_norm));
+        GenRays(ray,light_softness,world_pos,world_norm, Light::EType::Directional));
 
     const real_t ray_contribute = to_real(1.0)/(real_t)rays.size();
 
@@ -141,19 +150,19 @@ const vec3 DirectLightCalculator::CalcDirectionalLight(
 
     for(size_t ray_i=0;ray_i<rays.size();ray_i++)
     {
-        vec3 uvw(0);
-        real_t t;
+        Solver::SHitInfo hit;
 
-        if(!solver->Intersect(rays[ray_i],uvw,t))
+        if(!solver->Intersect(rays[ray_i],hit))
         {
             const real_t n_dot_dir = glm::max(glm::dot(world_norm,light_dir),to_real(0.0));
-            const real_t color_multiplier = n_dot_dir * ray_contribute;
             
-            ret += light_color * color_multiplier;
+            ret += light_color * n_dot_dir;
         }
     }
 
-    return ret;
+    ret *= ray_contribute;
+
+    return vec3(ret);
 }
 
 const vec3 DirectLightCalculator::CalcPointLight(
@@ -166,16 +175,14 @@ const vec3 DirectLightCalculator::CalcPointLight(
     const real_t light_softness = m_lights[light_index].GetSoftness();
 
 
-    const Ray ray(
-        world_pos + world_norm * m_bias,
-        light_pos
-    );
+    const Ray ray( world_pos + world_norm * m_config.bias,light_pos);
 
     const std::vector<Ray> rays = std::move(
-        GenRays(ray,light_softness,world_pos,world_norm)
-    );
+        GenRays(ray,light_softness,world_pos,world_norm,Light::EType::Point));
 
-    const real_t ray_contribute = to_real(1.0)/(real_t)rays.size();
+    const real_t ray_contribute = to_real(1.0) / (real_t)rays.size();
+
+    const real_t attenuation = glm::min(to_real(1.0) / (ray.GetLength() * ray.GetLength()),to_real(1.0));
 
     auto solver = m_lmb->GetSolver();
 
@@ -183,24 +190,23 @@ const vec3 DirectLightCalculator::CalcPointLight(
 
     for(size_t ray_i=0;ray_i<rays.size();ray_i++)
     {
-        vec3 uvw(0);
-        real_t t;
+        Solver::SHitInfo hit;
 
-        if(!solver->Intersect(rays[ray_i],uvw,t))
+        if(!solver->Intersect(rays[ray_i],hit))
         {
             const vec3 line = light_pos-world_pos;
             const vec3 dir = glm::normalize(line);
             const real_t dist = glm::length(line);
-
-            const real_t inverse_dist = to_real(1.0) / dist;
             
             const real_t n_dot_dir = glm::max(glm::dot(world_norm,dir),to_real(0.0));
             
-            const real_t color_multiplier = inverse_dist * n_dot_dir * ray_contribute;
+            const real_t color_multiplier = n_dot_dir * ray_contribute;
             
             ret += light_color * color_multiplier;
         }
     }
+
+    ret *= attenuation;
 
     return ret;
 }

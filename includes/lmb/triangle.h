@@ -20,9 +20,27 @@ class Triangle
 
 public:
 
+	Triangle()
+	{
+		m_lightmap = 0;
+		m_has_uv2 = false;
+	}
+
 	inline void SetPos(const std::array<vec3,3>& positions)
 	{
 		m_positions = positions;
+		GenAABB();
+	}
+
+	inline const std::array<vec3,3>& GetNormal() const
+	{
+		return m_positions;
+	}
+
+	inline void SetNormal(const std::array<vec3,3>& normals)
+	{
+		m_normals = normals;
+		m_has_normals = true;
 		GenAABB();
 	}
 
@@ -44,6 +62,14 @@ public:
 	inline const std::array<vec2,3>& GetUV2() const
 	{
 		return m_uv2;
+	}
+
+	inline const std::array<vec2,3>& GetLightmapUV() const
+	{
+		if(m_has_uv2)
+			return m_uv2;
+		else
+			return m_uv;
 	}
 
 	inline const bool HasUV2() const
@@ -74,18 +100,16 @@ public:
 		if(!IntersectAABBPoint(m_uv_bb,p))
 			return false;
 
-		real_t u = 0;
-		real_t v = 0;
-		real_t w = 0;
+		vec3 uvw(0);
 
-		Barycentric(p,m_uv[0],m_uv[1],m_uv[2],u,v,w);
+		Barycentric(p,m_uv,uvw);
 
-		if(	u >= to_real(1.01) || u <= to_real(-0.01) ||
-			v >= to_real(1.01) || v <= to_real(-0.01) ||
-			w >= to_real(1.01) || w <= to_real(-0.01))
+		if(	uvw.x >= to_real(1.01) || uvw.x <= to_real(-0.01) ||
+			uvw.y >= to_real(1.01) || uvw.y <= to_real(-0.01) ||
+			uvw.z >= to_real(1.01) || uvw.z <= to_real(-0.01))
 			return false;
 
-		out_uvw = vec3(u,v,w);
+		out_uvw = uvw;
 
 		return true;
 	}
@@ -95,34 +119,69 @@ public:
 		if(!IntersectAABBPoint(m_uv2_bb,p))
 			return false;
 
-		real_t u=0,v=0,w=0;
+		vec3 uvw(0);
 
-		Barycentric(p,m_uv2[0],m_uv2[1],m_uv2[2],u,v,w);
+		Barycentric(p,m_uv2,uvw);
 
-		if(	u >= to_real(1.01) || u <= to_real(-0.01) ||
-			v >= to_real(1.01) || v <= to_real(-0.01) ||
-			w >= to_real(1.01) || w <= to_real(-0.01))
+		if(	uvw.x >= to_real(1.01) || uvw.x <= to_real(-0.01) ||
+			uvw.y >= to_real(1.01) || uvw.y <= to_real(-0.01) ||
+			uvw.z >= to_real(1.01) || uvw.z <= to_real(-0.01))
 			return false;
 
-		out_uvw = vec3(u,v,w);
+		out_uvw = uvw;
 
 		return true;
 	}
 
-	vec3 BarycentricToPos(const vec3& uvw) const
+	const bool PointInsideLightmapUV(const vec2& p,vec3& out_uvw) const
+	{
+		if(m_has_uv2)
+		{
+			return PointInsideUV2(p,out_uvw);
+		}
+		else
+		{
+			return PointInsideUV1(p,out_uvw);
+		}
+	}
+
+	const vec3 BarycentricToPos(const vec3& uvw) const
 	{
 		return 	m_positions[0] * uvw[0] + m_positions[1] * uvw[1] + m_positions[2] * uvw[2];
 	}
 
-	vec3 BarycentricToNormal(const vec3& uvw) const
+	const vec3 BarycentricToNormal(const vec3& uvw) const
 	{
+		if(m_has_normals)
+		{
+			return m_normals[0] * uvw[0] + m_normals[1] * uvw[1] + m_normals[2] * uvw[2];
+		}
+		else
+		{
+			return glm::triangleNormal(m_positions[0],m_positions[1],m_positions[2]);
+		}
+	}
 
-		//return m_normals[0]*u +
-		//		 m_normals[1]*v +
-		//		 m_normals[2]*w;
+	const vec2 BarycentricToUV1(const vec3& uvw) const
+	{
+		return 	m_uv[0] * uvw[0] + m_uv[1] * uvw[1] + m_uv[2] * uvw[2];
+	}
 
-		return glm::triangleNormal(
-			m_positions[0],m_positions[1],m_positions[2]);
+	const vec2 BarycentricToUV2(const vec3& uvw) const
+	{
+		return 	m_uv2[0] * uvw[0] + m_uv2[1] * uvw[1] + m_uv2[2] * uvw[2];
+	}
+
+	const vec2 BarycentricToLightmapUV(const vec3& uvw) const
+	{
+		if(m_has_uv2)
+		{
+			return BarycentricToUV2(uvw);
+		}
+		else
+		{
+			return BarycentricToUV1(uvw);
+		}
 	}
 
 	inline void GenAABB()
@@ -229,6 +288,7 @@ protected:
     std::array<vec2,3> m_uv2;
 
 	bool m_has_uv2;
+	bool m_has_normals;
 
 };
 

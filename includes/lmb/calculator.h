@@ -20,10 +20,14 @@ public:
         m_blend = std::make_shared<CalcBlendSet>();
     }
 
-    //return value 0 - 100
-    virtual const size_t GetProgress()=0;
+    /**
+     * @brief Get the Progress 
+     * 
+     * @return the progress in percentage from 0 to 100
+     */
+    virtual const size_t GetProgress() = 0;
 
-    void SetLightmap(std::shared_ptr<Lightmap> &lightmap)
+    virtual void SetLightmap(std::shared_ptr<Lightmap> &lightmap)
     {
         m_lightmap = lightmap;
     }

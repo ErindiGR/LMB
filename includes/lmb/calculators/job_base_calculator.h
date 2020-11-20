@@ -17,6 +17,10 @@ public:
         EndCalc();
     }
 
+    /**
+     * @copydoc LMB::Calculator::GetProgress()
+     * 
+     */
     const size_t GetProgress()
     {
         size_t completed = 0;
@@ -28,6 +32,10 @@ public:
         return ( (real_t)completed / (real_t)m_jobs.size()) * 100;
     }
 
+    /**
+     * @copydoc ICalculable::EndCalc()
+     * 
+     */
     void EndCalc()
     { 
         while(1)

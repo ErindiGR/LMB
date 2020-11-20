@@ -12,68 +12,46 @@
 #include "lmb/triangle.h"
 #include "lmb/ray.h"
 #include "lmb/solvers/grid_solver.h"
+#include "lmb/aabbox.h"
 
+#define Dump_Push(type,val) Dumper<type,"dump_" ##type ".bin">::Push(val)
+
+#define DUMPER_CHUNK_SIZE  1024
 
 namespace LMB
 {
 
-class DumpInfo
-{
 
-public:
-
-    std::vector<Triangle> m_triangles;
-    std::vector<Ray> m_rays;
-    std::vector<GridCell> m_grid;
-
-};
-
-
+template<typename T,const char* Filename>
 class Dumper
 {
 
-protected:
-
-    static void Save();
-
-    template<typename T>
-    static void __Push(const T &obj);
-
-
 public:
 
-
-    static void Init(const std::string &filename);
-
-    static void Term();
-
-    static std::shared_ptr<DumpInfo> Load(const std::string &filename);
-
-
-    template<typename T>
-    static void Push(const T &obj)
+    void Push()
     {
-#if 1
-        std::lock_guard<std::mutex> lock(s_push_mutex);
+        std::scoped_lock<std::mutex> lock(s_push_mutex);
 
-        __Push(obj);
+        if(!s_file)
+        {
+            s_file = fopen(Filename,"wb");
+        }
 
-        Save();
-#endif
+        if(s_data.size() - s_writen > DUMPER_CHUNK_SIZE)
+        {
+            fwrite(s_data.data() + s_writen,sizeof(T),DUMPER_CHUNK_SIZE,s_file);
+            s_writen += DUMPER_CHUNK_SIZE;
+        }
     }
-    
-    template<typename T>
-    static void Pop(T &obj);
 
 
 
 protected:
 
     static std::vector<uint8_t> s_data;
-    static size_t s_pop_index;
     static size_t s_writen;
     static std::mutex s_push_mutex;
-    static FILE* s_file;
+    inline static FILE* s_file = nullptr;
 
 };
 

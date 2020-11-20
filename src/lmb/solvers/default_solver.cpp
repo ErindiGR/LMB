@@ -9,11 +9,14 @@ namespace LMB
 
 
 
-const bool DefaultSolver::Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt) const
+const bool DefaultSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
 {
     Ray r = ray;
-    real_t t = 0;
-    vec3 uvw(0);
+    
+    real_t  t = 0;
+    size_t  index = 0;
+    vec3    uvw(0);
+    
     bool hit = false;
 
     auto &triangles = m_lmb->GetTriangles();
@@ -23,14 +26,16 @@ const bool DefaultSolver::Intersect(const Ray &ray,vec3 &out_uvw,real_t &outt) c
         if(IntersectTriangle(r,triangles[i],uvw,t))
         {
             r.SetEnd(r.GetStart()+r.GetDir()*t);
+            index = i;
             hit = true;
         }
     }
 
     if(hit)
     {
-        outt = t;
-        out_uvw = uvw;
+        out_hit_info.t = t;
+        out_hit_info.uvw = uvw;
+        out_hit_info.triangle_index = index;
     }
 
     return hit;
@@ -65,12 +70,9 @@ const bool DefaultSolver::IntersectTriangle(const Ray &ray,const Triangle &tri,v
     return false;
 }
 
-
 void DefaultSolver::Gen()
 {
     
 }
-
-
 
 }
