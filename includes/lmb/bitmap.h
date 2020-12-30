@@ -136,8 +136,12 @@ public:
 
 	const T GetPixel(const real_t x,const real_t y) const
 	{
-		const real_t xf = x-((int)x);
-		const real_t yf = y-((int)y);
+		const bitmap_size_t x_min = std::floorf(x * m_width);
+		const bitmap_size_t y_min = std::floorf(y * m_height);
+
+		return GetPixel(x_min,y_min);
+		/*const real_t xf = x-();
+		const real_t yf = y-();
 
 		const bitmap_size_t x_min = std::floorf(xf*m_width);
 		const bitmap_size_t y_min = std::floorf(yf*m_height);
@@ -160,6 +164,7 @@ public:
 		const T b = Lerp(bl,br,tx);
 
 		return Lerp(t,b,ty);
+		*/
 	}
 
 	void SetPixel(const bitmap_size_t x,const bitmap_size_t y,const T& val)
@@ -248,6 +253,53 @@ public:
 			for(bitmap_size_t y=0;y<ret.GetHeight();y++)
 			{
 				ret.SetPixel(x,y,bitmap.GetPixel(x,y));
+			}	
+		}
+
+		return ret;
+	}
+
+	static void Multiply(Bitmap<vec4> &out_bitmap,real_t val)
+	{
+		for(bitmap_size_t x=0;x<out_bitmap.GetWidth();x++)
+		{
+			for(bitmap_size_t y=0;y<out_bitmap.GetHeight();y++)
+			{
+				out_bitmap.SetPixel(x,y,out_bitmap.GetPixel(x,y) * val);
+			}	
+		}
+	}
+
+	static void FlipV(Bitmap<vec4> &out_bitmap)
+	{
+		Bitmap<glm::vec4> ret(out_bitmap.GetWidth(),out_bitmap.GetHeight());
+
+		for(bitmap_size_t x=0;x<ret.GetWidth();x++)
+		{
+			for(bitmap_size_t y=0;y<ret.GetHeight();y++)
+			{
+				ret.SetPixel(x,ret.GetHeight()-y,out_bitmap.GetPixel(x,y));
+			}	
+		}
+
+		for(bitmap_size_t x=0;x<ret.GetWidth();x++)
+		{
+			for(bitmap_size_t y=0;y<ret.GetHeight();y++)
+			{
+				out_bitmap.SetPixel(x,y,ret.GetPixel(x,y));
+			}	
+		}
+	}
+
+	static Bitmap<vec4> ToVec4(const Bitmap<RGBA8> &bitmap)
+	{
+		Bitmap<vec4> ret(bitmap.GetWidth(),bitmap.GetHeight());
+
+		for(bitmap_size_t x=0;x<ret.GetWidth();x++)
+		{
+			for(bitmap_size_t y=0;y<ret.GetHeight();y++)
+			{
+				ret.SetPixel(x,y,bitmap.GetPixel(x,y).ToVec());
 			}	
 		}
 

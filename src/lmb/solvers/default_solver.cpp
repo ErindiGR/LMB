@@ -19,7 +19,7 @@ const bool DefaultSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
     
     bool hit = false;
 
-    auto &triangles = m_lmb->GetTriangles();
+    auto &triangles = GetLMB()->GetTriangles();
 
     for(size_t i=0;i<triangles.size();i++)
     {
@@ -53,17 +53,17 @@ const bool DefaultSolver::IntersectTriangle(const Ray &ray,const Triangle &tri,v
     vec3 uvw(0);
     auto &v = tri.GetPos();
     bool res = rayTriangleIntersect(ray.GetStart(),
-                                    ray.GetDir(),
-                                    v[0],v[1],v[2],
-                                    t,uvw.x,uvw.y
-                                    );
+        ray.GetDir(),v[0],v[1],v[2],t,uvw.x,uvw.y);
 
-
-    if(res && t>to_real(0.0) && t<ray.GetLength())
+    if(res && t>to_real(0.0) && t<=ray.GetLength())
     {
         outt = t;
-        uvw.z = 1-uvw.x-uvw.y;
-        out_uvw = uvw;
+        uvw.z = to_real(1.0)-uvw.x-uvw.y;
+        out_uvw.x = uvw.z;
+        out_uvw.y = uvw.x;
+        out_uvw.z = uvw.y;
+
+
         return true;
     }
 

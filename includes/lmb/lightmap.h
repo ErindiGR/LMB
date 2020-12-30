@@ -24,13 +24,32 @@ public:
 
 public:
 
-	Lightmap(const size_t width, const size_t height,const size_t index)
-	: m_colors(width,height,vec4(0,0,0,1))
-	, m_flags(width,height,EFlags::UnUsed)
-	, m_positions(width,height,vec3(0))
-	, m_normals(width,height,vec3(0))
+	Lightmap(const size_t size,const size_t index)
+	: m_colors(4,4)
+	, m_flags(4,4)
+	, m_positions(4,4)
+	, m_normals(4,4)
 	, m_index(index)
 	{
+
+		const int min_size = 5;
+		const int max_size = 12;
+
+		m_size = pow(2,min_size);
+
+		for(int i=min_size;i<max_size;i++)
+		{
+			if(size < pow(2,i))
+			{
+				m_size = pow(2,i);
+				break;
+			}
+		}
+
+		m_colors.Copy(Bitmap(m_size,m_size,vec4(0,0,0,1)));
+		m_flags.Copy(Bitmap(m_size,m_size,EFlags::UnUsed));
+		m_positions.Copy(Bitmap(m_size,m_size,vec3(0)));
+		m_normals.Copy(Bitmap(m_size,m_size,vec3(0)));
 	}
 
 	inline Bitmap<vec3>& GetPos()
@@ -53,9 +72,14 @@ public:
 		return m_flags;
 	}
 
-	inline size_t GetIndex()
+	inline const size_t GetIndex()
 	{
 		return m_index;
+	}
+
+	inline const bitmap_size_t GetSize()
+	{
+		return m_size;
 	}
 
 	void GenPosAndNorm(const std::vector<Triangle>& triangles);
@@ -67,11 +91,12 @@ public:
 
 protected:
 
+	bitmap_size_t 	m_size;
 	size_t 		 	m_index;
 	Bitmap<vec4> 	m_colors;
-	Bitmap<EFlags>  m_flags;
 	Bitmap<vec3> 	m_positions;
 	Bitmap<vec3> 	m_normals;
+	Bitmap<EFlags>  m_flags;
 
 };
 

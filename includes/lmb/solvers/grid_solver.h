@@ -17,36 +17,6 @@ class GridCell
 
 public:
 
-    GridCell(const AABB3D &bbox)
-    : m_bbox(bbox)
-    , m_triangle_indexes()
-    {
-    }
-
-    GridCell()
-    : m_bbox()
-    , m_triangle_indexes()
-    {
-    }
-
-    inline void AddTriangle(const size_t index)
-    {
-        m_triangle_indexes.push_back(index);
-    }
-
-    inline const AABB3D& GetAABB() const
-    {
-        return m_bbox;
-    }
-
-    inline const std::vector<size_t> &GetTriangles() const
-    {
-        return m_triangle_indexes;
-    }
-
-
-protected:
-
     AABB3D m_bbox;
     std::vector<size_t> m_triangle_indexes;
 };
@@ -77,12 +47,6 @@ public:
     * @brief creates the grid and assigns the triangles to each grid cell
     */
     void Gen();
-
-    /**
-    * @brief checks which triangles are inside the grid cell and adds them
-    * to it.
-    */
-    void GenCellTriangles(const size_t index);
     //!Solver
 
     const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;

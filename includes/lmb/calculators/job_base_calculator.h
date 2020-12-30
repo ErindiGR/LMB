@@ -21,7 +21,7 @@ public:
      * @copydoc LMB::Calculator::GetProgress()
      * 
      */
-    const size_t GetProgress()
+    const Progress<0,100> GetProgress() const
     {
         size_t completed = 0;
 
@@ -29,7 +29,7 @@ public:
             if(m_jobs[i]->Completed())
                 completed++;
         
-        return ( (real_t)completed / (real_t)m_jobs.size()) * 100;
+        return Progress<0,100>(to_real(completed) / to_real(m_jobs.size()) * 100);
     }
 
     /**
@@ -40,7 +40,7 @@ public:
     { 
         while(1)
         {
-            if(GetProgress() >= 100)
+            if(GetProgress().GetVal() >= 100)
                 break;
             
             std::this_thread::sleep_for(std::chrono::milliseconds(1));

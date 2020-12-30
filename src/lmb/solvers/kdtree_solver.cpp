@@ -4,139 +4,144 @@
 #include "lmb/solvers/grid_solver.h"
 #include "lmb/debug.h"
 
+#include <chrono>
 
 namespace LMB
 {
+
+real_t g_log_64[64];
 
 void KDTreeSolver::Gen()
 {
     m_cells.push_back(KDCell());
     
     m_cells[0].m_bbox = GenWorldAABB();
+    m_cells[0].m_depth = 1;
     
-    for(size_t i = 0;i < m_lmb->GetTriangles().size();i++)
+    for(size_t i = 0;i < GetLMB()->GetTriangles().size();i++)
         m_cells[0].m_triangle_indexes.push_back(i);
 
-    size_t depth_count = 0;
-    while(1)
+    for(size_t i = 0;i < 64;i++)
+        g_log_64[i] = glm::log(i);
+
+    m_cells.reserve(100000);
+
+    for(size_t i =0;i<24;i++)
     {
-        ++depth_count;
-        
-        size_t count = 0;
+        size_t count_splits=0;
         const size_t cell_count = m_cells.size();
         for(size_t c = 0;c < cell_count;c++)
         {
-            if(!m_cells[c].m_branch[0] && m_cells[c].m_triangle_indexes.size() > 2)
+            if(SplitCell(c))
             {
-                SplitCell(c);
-                ++count;
+                ++count_splits;
             }
         }
 
-        if(!count || depth_count > 8)
-            break;        
+        if(count_splits == 0)
+            break;
     }
+
+    Dump_Term(SAABB3DAndDepth);
 
     DEBUG_LOG("kdtree cell count %d \n",m_cells.size());
 }
 
-void KDTreeSolver::SplitCell(const size_t cell)
+bool KDTreeSolver::SplitCell(const size_t cell)
 {
-    ++m_axis;
-    m_axis %= KDTREE_AXIS;
+    if(m_cells[cell].m_triangle_indexes.size() <= 1 || m_cells[cell].m_branch[0])
+        return false;
 
-    real_t mid = 0;
-    for(size_t i = 0;i < m_cells[cell].m_triangle_indexes.size();i++)
+    int depth = m_cells[cell].m_depth+1;
+
+    int low_cost = 0;
+    AABB3D a_box;
+    AABB3D b_box;
+    std::vector<size_t> a_tri;
+    std::vector<size_t> b_tri;
+    
+    const int num_splits = 4;
+    const real_t split_size = to_real(1.0) / num_splits;
+
+    for(int i=0;i<3;i++)
     {
-        const size_t ti = m_cells[cell].m_triangle_indexes[i];
+        for(int k=0;k<num_splits-1;k++)
+        {
+            real_t l =  split_size * (k+1);
+            const real_t temp_mid = m_cells[cell].m_bbox.GetMin()[i]+
+                (m_cells[cell].m_bbox.GetMax()[i]-m_cells[cell].m_bbox.GetMin()[i])*l;
 
-        mid += m_lmb->GetTriangles()[ti].GetAABB().GetMax()[m_axis];
+
+            AABB3D a;
+            AABB3D b;
+            
+
+            vec3 min = m_cells[cell].m_bbox.GetMin();
+            vec3 max = m_cells[cell].m_bbox.GetMax();
+
+            max[i] = temp_mid;
+
+            a.SetMin(min);
+            a.SetMax(max);
+
+            min = m_cells[cell].m_bbox.GetMin();
+            max = m_cells[cell].m_bbox.GetMax();
+
+            min[i] = temp_mid;
+
+            b.SetMin(min);
+            b.SetMax(max);
+
+            auto a_vec = std::move(IntersectTriangleAABB(a,m_cells[cell].m_triangle_indexes));
+            auto b_vec = std::move(IntersectTriangleAABB(b,m_cells[cell].m_triangle_indexes));
+
+            const int cost = (depth)*g_log_64[depth] + (a_vec.size()*l + b_vec.size()*(1.0-l));
+
+            if(cost < low_cost || low_cost == 0)
+            {
+                low_cost = cost;
+                a_box = a;
+                b_box = b;
+                a_tri = std::move(a_vec);
+                b_tri = std::move(b_vec);
+            }
+        }
     }
 
-    mid /= m_cells[cell].m_triangle_indexes.size();
+    if(low_cost >= (depth-1)*g_log_64[glm::max(depth-1,0)] + m_cells[cell].m_triangle_indexes.size())
+        return false;
 
-    AABB3D a;
-    AABB3D b;
 
-    vec3 min = m_cells[cell].m_bbox.GetMin();
-    vec3 max = m_cells[cell].m_bbox.GetMax();
 
-    max[m_axis] = mid;
-
-    a.SetMin(min);
-    a.SetMax(max);
-
-    min = m_cells[cell].m_bbox.GetMin();
-    max = m_cells[cell].m_bbox.GetMax();
-
-    min[m_axis] = mid;
-
-    b.SetMin(min);
-    b.SetMax(max);
-
-    size_t a_index = 0;
-    size_t b_index = 0;
-
-    a_index = m_cells.size();
+    const size_t a_index = m_cells.size();
     m_cells.push_back(KDCell());
-    m_cells[a_index].m_bbox = a;
-
-    b_index = m_cells.size();
+    const size_t b_index = m_cells.size();
     m_cells.push_back(KDCell());
-    m_cells[b_index].m_bbox = b;
+
+    m_cells[a_index].m_bbox = a_box;
+    m_cells[b_index].m_bbox = b_box;
+
+    m_cells[a_index].m_depth = depth;
+    m_cells[b_index].m_depth = depth;
 
     m_cells[cell].m_branch[0] = a_index;
     m_cells[cell].m_branch[1] = b_index;
 
-    GenCellTriangles(cell,a_index);
-    GenCellTriangles(cell,b_index);
+    m_cells[a_index].m_triangle_indexes = std::move(a_tri);
+    m_cells[b_index].m_triangle_indexes = std::move(b_tri);
 
-    //clear the s_data vector
     std::vector<size_t>().swap(m_cells[cell].m_triangle_indexes);
-    
-}
 
-void KDTreeSolver::GenCellTriangles(const size_t parent,const size_t cell)
-{
-    auto &triangles = m_lmb->GetTriangles();
+#define CREATE_SAABB3DAndDepth(x)  (SAABB3DAndDepth){m_cells[x].m_bbox,m_cells[x].m_depth}
 
-    size_t count=0;
+    Dump_Push(SAABB3DAndDepth,CREATE_SAABB3DAndDepth(a_index));
+    Dump_Push(SAABB3DAndDepth,CREATE_SAABB3DAndDepth(b_index));
 
-    for(size_t i=0;i<m_cells[parent].m_triangle_indexes.size();i++)
-    {
-        const size_t ti = m_cells[parent].m_triangle_indexes[i];
-
-        if(Intersect2AABB3D(m_cells[cell].m_bbox,triangles[ti].GetAABB()))
-        {
-            m_cells[cell].m_triangle_indexes.push_back(ti);
-            ++count;
-        }
-        else
-        {
-            bool inside = false;
-
-            for(int v=0;v<triangles[i].GetPos().size();v++)
-            {
-                if(PointInsideBox(
-                    triangles[i].GetPos()[v],
-                    m_cells[cell].m_bbox.GetMin(),
-                    m_cells[cell].m_bbox.GetMax()))
-                    inside=true;
-            }
-
-            if(inside)
-            {
-                m_cells[cell].m_triangle_indexes.push_back(ti);
-                ++count;
-            }
-
-        }
-    }
-
+    return true;
 }
 
 const bool KDTreeSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
-{
+{   
     Ray r = ray;
 
     SHitInfo hit_info;
@@ -155,16 +160,35 @@ const bool KDTreeSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
     return hit;
 }
 
+
 const void KDTreeSolver::IntersectCell(Ray &ray,const size_t cell,SHitInfo &hit_info,bool &hit) const
 {
-    auto &triangles = m_lmb->GetTriangles();
 
-    real_t t = 0;
 
     auto &cell_ref = m_cells[cell];
 
+    if(cell_ref.m_triangle_indexes.size() <= 0 && !cell_ref.m_branch[0])
+        return;
+
+    auto &triangles = GetLMB()->GetTriangles();
+
+    if(cell_ref.m_triangle_indexes.size() == 1)
+    {
+        if(IntersectTriangle(ray,triangles[cell_ref.m_triangle_indexes[0]],hit_info.uvw,hit_info.t))
+        {
+            ray.SetEnd(ray.GetStart() + ray.GetDir() * hit_info.t);
+            hit_info.triangle_index = cell_ref.m_triangle_indexes[0];
+            hit = true;
+        }
+    }
+
+    
+
+    real_t t = 0;
+
     if(!IntersectAABB3D(ray,cell_ref.m_bbox,t))
         return;
+
 
 
     const bool it_branches = cell_ref.m_branch[0];
@@ -189,7 +213,9 @@ const void KDTreeSolver::IntersectCell(Ray &ray,const size_t cell,SHitInfo &hit_
                 hit = true;
             }
         }
+
     }
+
 }
 
 

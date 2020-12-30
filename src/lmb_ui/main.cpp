@@ -1,11 +1,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <thread>
+#include <vector>
 
-#include "lmb/lmb.h"
-#include "lmb/triangle.h"
-#include "lmb/ray.h"
-#include "lmb/dumper.h"
+#include <lmb/solvers/kdtree_solver.h>
 
 #include "lmb_ui/imgui/imgui.h"
 #include "lmb_ui/imgui/imgui_impl_sdl.h"
@@ -64,6 +62,26 @@ glPolygonMode(GL_FRONT,GL_FILL);
 }
 
 
+template<typename T>
+std::vector<T> Load(const char *filename)
+{
+    std::vector<T> data;
+
+    FILE* file = fopen(filename,"rb");
+
+    fseek(file,0,SEEK_END);
+    size_t count = ftell(file)/sizeof(T);
+    fseek(file,0,SEEK_SET);
+
+    data.resize(count);
+
+    fread(data.data(),sizeof(T),count,file);
+    fclose(file);
+
+    return std::move(data);
+}
+
+
 SDL_Window* window;
 SDL_GLContext gl_context;
 bool quit=false;
@@ -93,28 +111,21 @@ int main()
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL2_Init();
 
-    auto info = LMB::Dumper::Load("dump.dp");
-    std::vector<glm::vec3> grid_color(info->m_grid.size());
+    std::vector<LMB::SAABB3DAndDepth> grid = Load<LMB::SAABB3DAndDepth>("dump_""SAABB3DAndDepth"".bin");
+    std::vector<LMB::Triangle> triangles = Load<LMB::Triangle>("dump_""Triangle"".bin");
+    
 
-    for(size_t i=0;i<info->m_grid.size();i++)
-        grid_color[i] = glm::vec3(rand()%255/255.0f,rand()%255/255.0f,rand()%255/255.0f);
 
-    printf("count %lu .\n",info->m_rays.size());
+    printf("count %lu .\n",grid.size());
 
     glm::vec3 pos(0,0,-1);
 
     float rot_y = 0;
     float rot_x=0;
-    bool rays = false;
-    bool grid = false;
-    bool triangle_aabb = false;
-
-    int increase_amount = 32;
-    int start = 0;
-    int end = 10;
-    int inverse_density = 10;
+    int depth_lvl = 0;
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     while(!quit)
     {
@@ -147,102 +158,35 @@ int main()
 
 
         glClearColor(0.2f,0.2f,0.2f,1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 
         glMatrixMode(GL_MODELVIEW_MATRIX);
         glLoadMatrixf(glm::value_ptr(pv));
 
 
-        if(!info)
-        {
-            break;
-        }
-
-        inverse_density = glm::max(inverse_density,1);
-
-        if(rays)
-        {
-
-            glBegin(GL_LINES);
-            for(size_t i=start;i<info->m_rays.size() && i<end;i+=inverse_density)
-            {
-                glColor3f(info->m_rays[i].GetLength()/8.0f,0,0);
-                glVertex3f(
-                    info->m_rays[i].GetStart().x,
-                    info->m_rays[i].GetStart().y,
-                    info->m_rays[i].GetStart().z
-                );
-
-                glVertex3f(
-                    info->m_rays[i].GetEnd().x,
-                    info->m_rays[i].GetEnd().y,
-                    info->m_rays[i].GetEnd().z
-                );
-            }
-            glEnd();
-        }
-
-
-        glPointSize(4.0f);
-        glBegin(GL_POINTS);
-            for(size_t i=start;i<info->m_rays.size() && i<end;i+=inverse_density)
-            {
-                glColor3f(0,0,1);
-
-                glVertex3f(
-                    info->m_rays[i].GetEnd().x,
-                    info->m_rays[i].GetEnd().y,
-                    info->m_rays[i].GetEnd().z
-                );
-            }
-        glEnd();
-
-
-        
+        glColor3f(0.4,0.4,0.4);
         glBegin(GL_TRIANGLES);
-        for(size_t i=0;i<info->m_grid.size();i++)
+        for(size_t i=0;i<triangles.size();i++)
         {
-            glColor3f(grid_color[i].x,grid_color[i].y,grid_color[i].z);
-            for(size_t j=0;j<info->m_grid[i].GetTriangles().size();j++)
-            {   
-                size_t ti = info->m_grid[i].GetTriangles()[j];
-                for(size_t t=0;t<info->m_triangles[ti].GetPos().size();t++)
-                {
-                    glVertex3f(
-                        info->m_triangles[ti].GetPos()[t].x,
-                        info->m_triangles[ti].GetPos()[t].y,
-                        info->m_triangles[ti].GetPos()[t].z
-                    );
-                }
+            for(int j=0;j<3;j++)
+            {
+                glVertex3fv(&triangles[i].GetPos()[j].x);
             }
         }
         glEnd();
 
-        if(triangle_aabb)
+        glColor3f(1.0f,0,0);
+        for(size_t i=0;i<grid.size();i++)
         {
-            for(size_t i=0;i<info->m_grid.size();i++)
-            {
-                glColor3f(1-grid_color[i].x,1-grid_color[i].y,1-grid_color[i].z);
-                for(size_t j=0;j<info->m_grid[i].GetTriangles().size();j++)
-                {   
-                    size_t ti = info->m_grid[i].GetTriangles()[j];
-                    
-                    DrawCube(info->m_triangles[ti].GetAABB().GetMin(),
-                        info->m_triangles[ti].GetAABB().GetMax());
-                }
-            }
-               
+            if(depth_lvl == grid[i].depth)
+            DrawCube(grid[i].bbox.GetMin(),grid[i].bbox.GetMax());
         }
 
-        if(grid)
-        {
-            for(size_t i=0;i<info->m_grid.size();i++)
-                DrawCube(info->m_grid[i].GetAABB().GetMin(),info->m_grid[i].GetAABB().GetMax());
-        }
+
         
 
-        glFlush();
+        //glFlush();
         
 
         // Start the Dear ImGui frame
@@ -258,27 +202,7 @@ int main()
             ImGui::DragFloat("rot x",&rot_x);
             ImGui::DragFloat("rot y",&rot_y);
             ImGui::DragFloat("dist",&pos.z);
-
-            ImGui::DragInt("start",&start);
-            ImGui::DragInt("end",&end);
-
-            ImGui::DragInt("density",&inverse_density);
-
-            ImGui::DragInt("increase amount",&increase_amount);
-            if(ImGui::Button("increase"))
-            {
-                start += increase_amount;
-                end += increase_amount;
-            }
-
-            if(ImGui::Button("rays"))
-                rays = !rays;
-
-            if(ImGui::Button("grid"))
-                grid = !grid;
-
-            if(ImGui::Button("triangle_aabb"))
-                triangle_aabb = !triangle_aabb;
+            ImGui::DragInt("depth",&depth_lvl);
 
             ImGui::End();
         }
@@ -296,7 +220,7 @@ int main()
         //SDL_GL_MakeCurrent(window,NULL);
     }
 
-        // Cleanup
+        // Cleanup 
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();

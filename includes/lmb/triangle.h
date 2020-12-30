@@ -3,6 +3,7 @@
 #include "aabbox.h"
 #include "base_type.h"
 #include "geometry.h"
+#include "handles.h"
 
 #include <array>
 #include <glm/glm.hpp>
@@ -22,7 +23,7 @@ public:
 
 	Triangle()
 	{
-		m_lightmap = 0;
+		m_has_normals = false;
 		m_has_uv2 = false;
 	}
 
@@ -49,9 +50,9 @@ public:
 		return m_positions;
 	}
 
-	inline const size_t GetLightmap() const
+	inline const size_t GetInfo() const
 	{
-		return m_lightmap;
+		return m_info;
 	}
 
 	inline const std::array<vec2,3>& GetUV() const
@@ -77,22 +78,22 @@ public:
 		return m_has_uv2;
 	}
 
-	inline void SetLightmap(const size_t lightmap)
+	inline void SetInfo(const size_t info)
 	{
-		m_lightmap = lightmap;
+		m_info = info;
 	}
 
 	inline void SetUV(const std::array<vec2,3>& uv)
 	{
 		m_uv = uv;
-		GenAABBUV();
+		GenAABBUV1();
 	}
 
 	inline void SetUV2(const std::array<vec2,3>& uv2)
 	{
 		m_uv2 = uv2;
 		m_has_uv2 = true;
-		GenAABBUV();
+		GenAABBUV2();
 	}
 
 	const bool PointInsideUV1(const vec2& p,vec3& out_uvw) const
@@ -104,9 +105,9 @@ public:
 
 		Barycentric(p,m_uv,uvw);
 
-		if(	uvw.x >= to_real(1.01) || uvw.x <= to_real(-0.01) ||
-			uvw.y >= to_real(1.01) || uvw.y <= to_real(-0.01) ||
-			uvw.z >= to_real(1.01) || uvw.z <= to_real(-0.01))
+		if(	uvw.x >= to_real(1.0) || uvw.x <= to_real(0.0) ||
+			uvw.y >= to_real(1.0) || uvw.y <= to_real(0.0) ||
+			uvw.z >= to_real(1.0) || uvw.z <= to_real(0.0))
 			return false;
 
 		out_uvw = uvw;
@@ -123,9 +124,9 @@ public:
 
 		Barycentric(p,m_uv2,uvw);
 
-		if(	uvw.x >= to_real(1.01) || uvw.x <= to_real(-0.01) ||
-			uvw.y >= to_real(1.01) || uvw.y <= to_real(-0.01) ||
-			uvw.z >= to_real(1.01) || uvw.z <= to_real(-0.01))
+		if(	uvw.x >= to_real(1.0) || uvw.x <= to_real(0.0) ||
+			uvw.y >= to_real(1.0) || uvw.y <= to_real(0.0) ||
+			uvw.z >= to_real(1.0) || uvw.z <= to_real(0.0))
 			return false;
 
 		out_uvw = uvw;
@@ -202,20 +203,12 @@ public:
 			}
 		}
 
-		for(int j=0;j<3;j++)
-		{
-			if(glm::abs(min[j]-max[j]) < to_real(1.0)/to_real(512.0))
-			{
-				max[j]+= to_real(1.0)/to_real(512.0);
-			}
-		}
-
 		m_bbox.SetMax(max);
 		m_bbox.SetMin(min);
 
 	}
 
-	inline void GenAABBUV()
+	inline void GenAABBUV1()
 	{
 		vec2 min(1000000);
 		vec2 max(-1000000);
@@ -235,10 +228,12 @@ public:
 
 		m_uv_bb.SetMax(max);
 		m_uv_bb.SetMin(min);
+	}
 
-
-		min = vec2(1000000);
-		max = vec2(-1000000);
+	inline void GenAABBUV2()
+	{
+		vec2 min = vec2(1000000);
+		vec2 max = vec2(-1000000);
 
 		for(int i=0;i<m_uv2.size();i++)
 		{
@@ -273,10 +268,18 @@ public:
 		return m_uv2_bb;
 	}
 
+	inline const AABB2D& GetLightmapAABBUV() const
+	{
+		if(m_has_uv2)
+			return m_uv2_bb;
+		
+		return m_uv_bb;
+	}
+
 
 protected:
 
-	size_t m_lightmap;
+	size_t m_info;
 
 	AABB3D m_bbox;
 	AABB2D m_uv_bb;
@@ -290,6 +293,68 @@ protected:
 	bool m_has_uv2;
 	bool m_has_normals;
 
+};
+
+
+class TriangleInfo
+{
+
+public:
+
+	TriangleInfo()
+	{
+	}
+
+	void SetLightmap(const LightmapHandle &lightmap)
+	{
+		m_lightmap = lightmap;
+	}
+
+	void SetEmissive(const BitmapHandle &emissive)
+	{
+		m_emissive = emissive;
+	}
+
+	void SetAlbedo(const BitmapHandle &albedo)
+	{
+		m_albedo = albedo;
+	}
+
+	const LightmapHandle GetLightmap()const
+	{
+		return m_lightmap;
+	}
+
+	const BitmapHandle GetEmissive()const
+	{
+		return m_emissive;
+	}
+
+	const BitmapHandle GetAlbedo()const
+	{
+		return m_albedo;
+	}
+
+	const bool HasLightmap()const
+	{
+		return m_lightmap.IsValid();
+	}
+
+	const bool HasEmissive()const
+	{
+		return m_emissive.IsValid();
+	}
+
+	const bool HasAlbedo()const
+	{
+		return m_albedo.IsValid();
+	}
+
+protected:
+
+	LightmapHandle m_lightmap;
+	BitmapHandle m_emissive;
+	BitmapHandle m_albedo;
 };
 
 }

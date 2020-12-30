@@ -1,8 +1,7 @@
 
 #pragma once
 
-
-#include "lmb/calculators/temp_lightamp_calculator.h"
+#include "lmb/calculators/job_base_calculator.h"
 #include "lmb/calculators/lightmap_chunks_job.h"
 #include "lmb/lightmap.h"
 #include "lmb/base_type.h"
@@ -27,15 +26,17 @@ public:
         const size_t y_start,
         const size_t x_end,
         const size_t y_end,
-        class IndirectLightCalculator* aocalc);
+        const size_t lightmap,
+        class IndirectLightCalculator* calc,
+        const uint16_t bounce);
 
     //LightmapChunkJob
     void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
     //!LightmapChunkJob
 
 protected:
-    
-    class IndirectLightCalculator* m_aocalc;
+
+    uint16_t m_bounce;
 };
 
 
@@ -60,44 +61,57 @@ struct SGICalcConfig
     /** number of rays per pixel*/
     uint16_t num_rays;
 
+    /** number of rays per pixel*/
+    uint16_t num_final_rays;
+
     uint16_t num_bounces;
 };
 
 inline const SGICalcConfig default_il_config =
 {
-.ambient_color = vec3(0),
-.max_angle = to_real(90.0),
-.ray_distance = to_real(10000.0),
+.ambient_color =  vec3(0),//vec3(to_real(0.1),to_real(0.1),to_real(0.15)),
+.max_angle = to_real(89.0),
+.ray_distance = to_real(1000.0),
 .bias = to_real(1.0)/to_real(1024.0),
-.num_rays = 128,
-.num_bounces = 8
+.num_rays = 32,
+.num_final_rays = 128,
+.num_bounces = 4
 };
 
 /**
-* @brief Calculates Inditect illumination
+* @brief Calculates Indirect illumination
 */
-class IndirectLightCalculator : public TempLigthmapCalculator
+class IndirectLightCalculator : public JobBaseCalculator
 {
 
 public:
 
     IndirectLightCalculator(const SGICalcConfig &config)
-    : TempLigthmapCalculator(true)
-    , m_config(config)
+    : m_config(config)
     {
     }
 
-    void StartCalc();
+    void StartCalc(const size_t lightmap);
 
     vec4 CalcPixel(
-        const bitmap_size_t x,
-        const bitmap_size_t y,
         const vec3 &world_pos,
-        const vec3 &world_norm);
+        const vec3 &world_norm,
+        const uint16_t bounce);
 
     const std::vector<Ray> GenRays(
         const vec3 &pos,
-        const vec3 &norm) const;
+        const vec3 &norm,
+        const uint16_t bounce) const;
+
+    const vec3 CalcIndirectLighting(
+        const vec3 norm,
+        const Ray &ray,
+        const Solver::SHitInfo &hit);
+
+    const vec3 CalcReceivedLight(
+        const vec3 norm,
+        const Ray &ray,
+        const Solver::SHitInfo &hit);
 
 protected:
 

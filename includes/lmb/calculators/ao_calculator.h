@@ -28,15 +28,12 @@ public:
         const size_t y_start,
         const size_t x_end,
         const size_t y_end,
-        class AOCalculator* aocalc);
+        const size_t lightmap,
+        class AOCalculator* calc);
 
     //LightmapChunkJob
     void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
     //!LightmapChunkJob
-
-protected:
-    
-    class AOCalculator* m_aocalc;
 };
 
 
@@ -62,8 +59,8 @@ struct SAOCalcConfig
 
 inline const SAOCalcConfig default_ao_config =
 {
-.max_angle = to_real(90.0),
-.ray_distance = to_real(3.0),
+.max_angle = to_real(85.0),
+.ray_distance = to_real(1.0),
 .bias = to_real(1.0)/to_real(1024.0),
 .num_rays = 128
 };
@@ -81,17 +78,19 @@ public:
     {
     }
 
-    void StartCalc();
+    void StartCalc(const size_t lightmap);
 
     vec4 CalcPixel(
-        const int x,
-        const int y,
         const vec3 &world_pos,
         const vec3 &world_norm);
 
     const std::vector<Ray> GenRays(
         const vec3 &pos,
         const vec3 &norm) const;
+
+    const real_t CalcOcclusion(
+        const Ray &ray,
+        const Solver::SHitInfo &hit);
 
 protected:
 

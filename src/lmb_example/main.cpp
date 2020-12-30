@@ -7,30 +7,85 @@
 #include <lmb/calculators/direct_light_calculator.h>
 #include <lmb/calculators/denois_calculator.h>
 #include <lmb/calculators/padding_calculator.h>
-#include <lmb/dumper.h>
+
+
+#include "obj_loader.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 
 using namespace LMB;
 
-#include "obj_loader.h"
+#include "display.h"
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
+
 
 int main()
 {
+	InitDisplay();
+
+	//Init LMB
 	LMB::Init();
 
+	//Create LMB Session
 	std::shared_ptr<LMBSession> lmb = std::make_shared<LMBSession>();
 
+
+	//Load .obj file
 	objl::Loader obj_loader;
 
-	obj_loader.LoadFile("scene2.obj");
+	obj_loader.LoadFile("scene2.1.obj");
+
+
+	//Load textures
+	int texture_w =0,texture_h=0,texture_c=0;
+
+	stbi_uc* texture_data = stbi_load("scene2.1_texture.png",&texture_w,&texture_h,&texture_c,4);
+
+	Bitmap<RGBA8> texture(texture_w,texture_h);
+
+	std::memcpy(texture.GetData(),texture_data,texture_w*texture_h*texture_c);
+
+	auto texture_vec4 = std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture));
+
+	auto texture_color = lmb->AddBitmap(texture_vec4);
+
+	BitmapUtils::FlipV(*(texture_vec4.get()));
+
+
+	texture_data = stbi_load("scene2.1_emissive.png",&texture_w,&texture_h,&texture_c,4);
+
+	Bitmap<RGBA8> texture2(texture_w,texture_h);
+
+	std::memcpy(texture2.GetData(),texture_data,texture_w*texture_h*texture_c);
+
+	texture_vec4 = std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture2));
+
+	BitmapUtils::Multiply(*(texture_vec4.get()),6);
+
+	auto texture_emissive = lmb->AddBitmap(texture_vec4);
+
+	BitmapUtils::FlipV(*(texture_vec4.get()));
+	
 
 	for(size_t j=0;j<obj_loader.LoadedMeshes.size();j++)
 	{
+		//Create lightmap
+		LightmapHandle lightmap = lmb->AddLightmap(256);
 
-		size_t lightmap = lmb->AddLightmap(128,128);
+		//Create triangle info
+		TriangleInfo triangle_info;
 
+		triangle_info.SetLightmap(lightmap);
+		triangle_info.SetAlbedo(texture_color);
+		triangle_info.SetEmissive(texture_emissive);
+
+		//Add TriangleInfo to LMBSession
+		size_t info = lmb->AddTriangleInfo(triangle_info);
+
+		//Create Triangle and add it to LMBSession
 		for(size_t i =0;i<obj_loader.LoadedMeshes[j].Indices.size();i+=3)
 		{
 			auto &mesh = obj_loader.LoadedMeshes[j];
@@ -82,71 +137,81 @@ int main()
 
 			tri.SetUV2(uv);
 
-			tri.SetLightmap(lightmap);
+			tri.SetInfo(info);
 
 			lmb->AddTriangle(tri);
 		}
 	}
 
 
+	//Create Solver 
 	auto solver = std::shared_ptr<Solver>(new KDTreeSolver());
 	//auto solver = std::shared_ptr<Solver>(new GridSolver(8));
+	//auto solver = std::shared_ptr<Solver>(new DefaultSolver());
+	
+	//Assign Solver to LMBSession
 	lmb->SetSolver(solver);
 
-	
+	//Get Start Time
 	auto t0 = std::chrono::high_resolution_clock::now();
-
+	
 #if 1
-	auto calc = std::shared_ptr<Calculator>(new DirectLightCalculator(default_dl_config));
+	//Create direct lighting calculator
+	auto calc = std::shared_ptr<DirectLightCalculator>(new DirectLightCalculator(default_dl_config));
+	//Set the calculator blend mode default is BlendSet
 	calc->SetBlend(std::make_shared<CalcBlendAdd>());
 
-#if 1
+#if 0
 	Light dir_light(Light::EType::Directional);
-	dir_light.SetDir(glm::normalize(vec3(1,1,-1)));
-	dir_light.SetSoftness(0.00);
+	dir_light.SetDir(glm::normalize(vec3(1,1,1)));
+	dir_light.SetSoftness(0.1);
 	dir_light.SetColor(vec3(1));
-	((DirectLightCalculator*)calc.get())->AddLight(dir_light);
+	calc->AddLight(dir_light);
 #endif
 
 #if 0
 	Light point_light(Light::EType::Point);
-	point_light.SetPos(vec3(-1,0.5,0));
-	point_light.SetColor(vec3(1,0,0));
-	point_light.SetSoftness(0.1);
-	((DirectLightCalculator*)calc.get())->AddLight(point_light);
+	point_light.SetPos(vec3(-1,0.0,0));
+	point_light.SetColor(vec3(1));
+	point_light.SetSoftness(0.05);
+	calc->AddLight(point_light);
 #endif
 
-	lmb->SetCalculator(calc);
+	lmb->SetCalculator(std::static_pointer_cast<Calculator>(calc));
 	printf("Calculation DL started\n");
 	lmb->StartCalc();
+	DrawCalcResult(lmb);
 	lmb->EndCalc();
 #endif
 
+
 #if 1
 
-	auto gicalc = std::shared_ptr<Calculator>(new IndirectLightCalculator(default_il_config));
-	gicalc->SetBlend(std::make_shared<CalcBlendAdd>());
-	lmb->SetCalculator(gicalc);
+	auto gi_calc = std::shared_ptr<Calculator>(new IndirectLightCalculator(default_il_config));
+	gi_calc->SetBlend(std::make_shared<CalcBlendAdd>());
+	lmb->SetCalculator(gi_calc);
 	printf("Calculation IL started\n");
 	lmb->StartCalc();
+	DrawCalcResult(lmb);
 	lmb->EndCalc();
 
-#endif
-	
-#if 0
-	auto aocalc = std::shared_ptr<Calculator>(new AOCalculator(default_ao_config));
-	aocalc->SetBlend(std::make_shared<CalcBlendMul>());
-	lmb->SetCalculator(aocalc);
-	printf("Calculation AO started\n");
-	lmb->StartCalc();
-	lmb->EndCalc();
 #endif
 
 #if 1
-	auto denois = std::shared_ptr<Calculator>(new DenoisCalculator(4,0.8));
-	lmb->SetCalculator(denois);
-	printf("Calculation denois started\n");
+	auto denoise = std::shared_ptr<Calculator>(new DenoiseCalculator(32,4/32.0));
+	lmb->SetCalculator(denoise);
+	printf("Calculation denoise started\n");
 	lmb->StartCalc();
+	lmb->EndCalc();
+#endif
+	
+#if 1
+	auto ao_calc = std::shared_ptr<Calculator>(new AOCalculator(default_ao_config));
+	ao_calc->SetBlend(std::make_shared<CalcBlendMul>());
+	lmb->SetCalculator(ao_calc);
+	printf("Calculation AO started\n");
+	lmb->StartCalc();
+	DrawCalcResult(lmb);
 	lmb->EndCalc();
 #endif
 
@@ -158,17 +223,21 @@ int main()
 	lmb->EndCalc();
 #endif
 
-	auto t1 = std::chrono::high_resolution_clock::now();
+	//Get End Time
+	auto t2 = std::chrono::high_resolution_clock::now();
 
+	//Print Calculation Duration Time
 	printf("Time: %dmin %ds .\n",
-		std::chrono::duration_cast<std::chrono::minutes>(t1-t0),
-		std::chrono::duration_cast<std::chrono::seconds>(t1-t0) % 60);
+		std::chrono::duration_cast<std::chrono::minutes>(t2-t0),
+		std::chrono::duration_cast<std::chrono::seconds>(t2-t0) % 60);
 
 
+	//Write lightmaps
 	for(size_t i=0;i<lmb->GetLightmaps().size();i++)
 	{
+		
 		auto res = BitmapUtils::ToRGBAFloat(lmb->GetLightmaps()[i]->GetColor());
-		//auto res = (lmb->GetLightmaps()[i]->GetNorm());
+		BitmapUtils::FlipV(res);
 
 		char filename[32];
 
@@ -178,7 +247,10 @@ int main()
 	}
 
 
+	//Terminate LMB
 	LMB::Term();
+
+	TermDisplay();
 
 	return 1;
 }

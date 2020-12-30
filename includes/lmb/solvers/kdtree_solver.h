@@ -4,6 +4,7 @@
 #include "lmb/aabbox.h"
 
 #include <array>
+#include <chrono>
 
 #define KDTREE_AXIS 3
 
@@ -19,18 +20,29 @@ public:
     AABB3D m_bbox;
     std::array<size_t,2> m_branch;
     std::vector<size_t> m_triangle_indexes;
+    uint16_t m_depth;
+    uint16_t m_axis;
 };
 
 
+/**
+ * @brief !!!WORK IN PROGRESS!!!
+ * 
+ */
 class KDTreeSolver : public AABBBaseSolver
 {
 
-
+public:
     void Gen();
 
-    void SplitCell(const size_t cell);
-
-    void GenCellTriangles(const size_t parent,const size_t cell);
+    /**
+     * @brief Spilits a Cell
+     * 
+     * @param cell 
+     * @return true if the cell was split
+     * @return false if not
+     */
+    bool SplitCell(const size_t cell);
 
     const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;
 
@@ -38,9 +50,14 @@ class KDTreeSolver : public AABBBaseSolver
 
 protected:
 
-    size_t m_axis;
+    //size_t m_axis;
     std::vector<KDCell> m_cells;
+};
 
+struct SAABB3DAndDepth
+{
+    AABB3D bbox;
+    size_t depth;
 };
 
 }

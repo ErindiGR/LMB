@@ -4,8 +4,8 @@
 #include "lmb/calculators/lightmap_chunks_job.h"
 #include "lmb/thread_job.h"
 #include "lmb/base_type.h"
-
-
+#include "lmb/solver.h"
+#include "lmb/ray.h"
 
 namespace LMB
 {
@@ -99,18 +99,17 @@ public:
         const bitmap_size_t y_start,
         const bitmap_size_t x_end,
         const bitmap_size_t y_end,
+        const size_t lightmap,
         class DirectLightCalculator* calc);
 
     void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
-
-protected:
-
-    class DirectLightCalculator* m_calc;
 };
 
 
 struct SDLCalcConfig
 {
+    bool        use_emissive;
+    uint16_t    mun_emissive_rays;
     uint16_t    num_rays;
     real_t      max_ray_distance;
     real_t      bias;
@@ -119,6 +118,8 @@ struct SDLCalcConfig
 
 inline SDLCalcConfig default_dl_config
 {
+.use_emissive = true,
+.mun_emissive_rays = 256,
 .num_rays = 128,
 .max_ray_distance = to_real(1000000.0),
 .bias = to_real(1.0)/to_real(1024.0),
@@ -141,12 +142,10 @@ public:
     }
     
     //ICalculable
-    void StartCalc();
+    void StartCalc(const size_t lightmap);
     //!ICalculable
 
     vec4 CalcPixel(
-        const bitmap_size_t x,
-        const bitmap_size_t y,
         const vec3 &world_pos,
         const vec3 &world_norm);
 
@@ -160,12 +159,24 @@ public:
         const vec3 &world_norm,
         const size_t light_index);
 
+    const vec3 CalcEmission(
+        const vec3 &world_pos,
+        const vec3 &world_norm);
+
+    const vec3 CalcTransparentEmission(const Ray &ray,const Solver::SHitInfo &hit);
+    const vec3 CalcTransparentLight(const Ray &ray,const Solver::SHitInfo &hit,const vec3 &light_color);
+    const vec3 GetTransparentContribution(const vec4 color,const vec3 light_color);
+
     std::vector<Ray> GenRays(
-        const Ray &ray,
         const real_t softness,
+        const real_t length,
         const vec3 &pos,
         const vec3 &norm,
         const Light::EType light_type);
+
+    const std::vector<Ray> GenRays(
+        const vec3 &pos,
+        const vec3 &norm) const;
 
     void AddLight(const Light &l)
     {

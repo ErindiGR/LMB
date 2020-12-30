@@ -5,12 +5,9 @@
 #include "aabbox.h"
 #include "ray.h"
 
-#define GLM_FORCE_INLINE 
 #include <glm/gtx/component_wise.hpp>
-#undef GLM_FORCE_INLINE 
 
 #include <array>
-
 
 namespace LMB
 {
@@ -23,9 +20,24 @@ inline const bool PointInsideBox(const vec3 &point,const vec3 &min,const vec3 &m
             (point.z >= min.z && point.z <= max.z);
 }
 
+inline const bool PointInsideBox(const vec3 &point,const AABB3D &bbox)
+{
+    const vec3 min = bbox.GetMin();
+    const vec3 max = bbox.GetMax();
+    
+    return  (point.x >= min.x && point.x <= max.x) &&
+            (point.y >= min.y && point.y <= max.y) &&
+            (point.z >= min.z && point.z <= max.z);
+}
 
-
-
+inline const bool PointInsideBox(const vec2 &point,const AABB2D &bbox)
+{
+    const vec2 min = bbox.GetMin();
+    const vec2 max = bbox.GetMax();
+    
+    return  (point.x >= min.x && point.x <= max.x) &&
+            (point.y >= min.y && point.y <= max.y);
+}
 
 inline const real_t RayBoxIntersect(
     const vec3 &rpos,
@@ -65,16 +77,16 @@ inline const real_t RayBoxIntersectFast(
 {
 
     const vec3 &rpos = ray.GetStart();
-    const vec3 &rdir = ray.GetDir();
+    const vec3 &rinvdir = ray.GetInvDir();
     const vec3 &vmin = aabb.GetMin();
     const vec3 &vmax = aabb.GetMax();
 
-    const real_t t1 = (vmin.x - rpos.x) / rdir.x;
-    const real_t t2 = (vmax.x - rpos.x) / rdir.x;
-    const real_t t3 = (vmin.y - rpos.y) / rdir.y;
-    const real_t t4 = (vmax.y - rpos.y) / rdir.y;
-    const real_t t5 = (vmin.z - rpos.z) / rdir.z;
-    const real_t t6 = (vmax.z - rpos.z) / rdir.z;
+    const real_t t1 = (vmin.x - rpos.x) * rinvdir.x;
+    const real_t t2 = (vmax.x - rpos.x) * rinvdir.x;
+    const real_t t3 = (vmin.y - rpos.y) * rinvdir.y;
+    const real_t t4 = (vmax.y - rpos.y) * rinvdir.y;
+    const real_t t5 = (vmin.z - rpos.z) * rinvdir.z;
+    const real_t t6 = (vmax.z - rpos.z) * rinvdir.z;
  
     const real_t aMin = t1 < t2 ? t1 : t2;
     const real_t bMin = t3 < t4 ? t3 : t4;
@@ -102,12 +114,12 @@ inline const real_t RayBoxIntersectFast2(
 {
 
     const vec3 &rpos = ray.GetStart();
-    const vec3 &rdir = ray.GetDir();
+    const vec3 &rinvdir = ray.GetInvDir();
     const vec3 &vmin = aabb.GetMin();
     const vec3 &vmax = aabb.GetMax();
 
-    const vec3 a = (vmin - rpos) / rdir;
-    const vec3 b = (vmax - rpos) / rdir;
+    const vec3 a = (vmin - rpos) * rinvdir;
+    const vec3 b = (vmax - rpos) * rinvdir;
 
     const vec3 min(
         glm::min(a[0],b[0]),
@@ -127,47 +139,49 @@ inline const real_t RayBoxIntersectFast2(
     return t9;
 }
 
-inline const bool RayBoxIntersecFastBool(
-    const vec3 &rpos,
-    const vec3 &rdir,
-    const vec3 &vmin,
-    const vec3 &vmax,
-    real_t &out_t)
-{
-    vec3 dirfrac;
-    // r.dir is unit direction vector of ray
-    dirfrac.x = to_real(1.0) / rdir.x;
-    dirfrac.y = to_real(1.0) / rdir.y;
-    dirfrac.z = to_real(1.0) / rdir.z;
-    // lb is the corner of AABB with minimal coordinates - left bottom, rt is maximal corner
-    // r.org is origin of ray
-    real_t t1 = (vmin.x - rpos.x)*dirfrac.x;
-    real_t t2 = (vmax.x - rpos.x)*dirfrac.x;
-    real_t t3 = (vmin.y - rpos.y)*dirfrac.y;
-    real_t t4 = (vmax.y - rpos.y)*dirfrac.y;
-    real_t t5 = (vmin.z - rpos.z)*dirfrac.z;
-    real_t t6 = (vmax.z - rpos.z)*dirfrac.z;
 
-    real_t tmin = glm::max(glm::max(glm::min(t1, t2), glm::min(t3, t4)), glm::min(t5, t6));
-    real_t tmax = glm::min(glm::min(glm::max(t1, t2), glm::max(t3, t4)), glm::max(t5, t6));
 
-    // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
-    if (tmax < 0)
-    {
-        out_t = tmax;
-        return false;
-    }
-
-    // if tmin > tmax, ray doesn't intersect AABB
-    if (tmin > tmax)
-    {
-        out_t = tmax;
-        return false;
-    }
+//source: https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
+inline const bool AABBRayIntersection(const Ray &r, const AABB3D &bb,real_t &out_t) 
+{ 
+    real_t tmin = (bb.GetMax().x - r.GetStart().x) / r.GetDir().x; 
+    real_t tmax = (bb.GetMax().x - r.GetStart().x) / r.GetDir().x; 
+ 
+    if (tmin > tmax) std::swap(tmin, tmax); 
+ 
+    real_t tymin = (bb.GetMin().y - r.GetStart().y) / r.GetDir().y; 
+    real_t tymax = (bb.GetMax().y - r.GetStart().y) / r.GetDir().y; 
+ 
+    if (tymin > tymax) std::swap(tymin, tymax); 
+ 
+    if ((tmin > tymax) || (tymin > tmax)) 
+        return false; 
+ 
+    if (tymin > tmin) 
+        tmin = tymin; 
+ 
+    if (tymax < tmax) 
+        tmax = tymax; 
+ 
+    real_t tzmin = (bb.GetMin().z - r.GetStart().z) / r.GetDir().z; 
+    real_t tzmax = (bb.GetMax().z - r.GetStart().z) / r.GetDir().z; 
+ 
+    if (tzmin > tzmax) std::swap(tzmin, tzmax); 
+ 
+    if ((tmin > tzmax) || (tzmin > tmax)) 
+        return false; 
+ 
+    if (tzmin > tmin) 
+        tmin = tzmin; 
+ 
+    if (tzmax < tmax) 
+        tmax = tzmax; 
 
     out_t = tmin;
-    return true;
-}
+ 
+    return true; 
+} 
+
 
 //source: https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 inline const bool Intersect2AABB3D(const AABB3D &a,const AABB3D &b)
@@ -207,10 +221,10 @@ inline bool rayTriangleIntersect(
     real_t &v) 
 { 
 #ifdef MOLLER_TRUMBORE 
-    vec3 v0v1 = v1 - v0; 
-    vec3 v0v2 = v2 - v0; 
-    vec3 pvec = glm::cross(dir,v0v2); 
-    real_t det = glm::dot(v0v1,pvec); 
+    const vec3 v0v1 = v1 - v0; 
+    const vec3 v0v2 = v2 - v0; 
+    const vec3 pvec = glm::cross(dir,v0v2); 
+    const real_t det = glm::dot(v0v1,pvec); 
 #ifdef CULLING 
     // if the determinant is negative the triangle is backfacing
     // if the determinant is close to 0, the ray misses the triangle
@@ -219,14 +233,14 @@ inline bool rayTriangleIntersect(
     // ray and triangle are parallel if det is close to 0
     if (fabs(det) < kEpsilon) return false; 
 #endif 
-    real_t invDet = 1 / det; 
+    const real_t invDet = to_real(1) / det; 
  
-    vec3 tvec = orig - v0; 
+    const vec3 tvec = orig - v0; 
     u = glm::dot(tvec,pvec) * invDet; 
     if (u < to_real(0) || u > to_real(1))
         return false; 
  
-    vec3 qvec = glm::cross(tvec,v0v1); 
+    const vec3 qvec = glm::cross(tvec,v0v1); 
     v = glm::dot(dir,qvec) * invDet; 
     if (v < to_real(0) || u + v > to_real(1))
         return false; 
@@ -242,29 +256,6 @@ inline bool rayTriangleIntersect(
 
 
 
-/*source:
-https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
-*/
-static inline void Barycentric(
-    const vec2 &p, 
-    const vec2 &a,
-    const vec2 &b,
-    const vec2 &c,
-    real_t &out_u,
-    real_t &out_v,
-    real_t &out_w)
-{
-    vec2 v0 = b - a, v1 = c - a, v2 = p - a;
-    real_t d00 = glm::dot(v0, v0);
-    real_t d01 = glm::dot(v0, v1);
-    real_t d11 = glm::dot(v1, v1);
-    real_t d20 = glm::dot(v2, v0);
-    real_t d21 = glm::dot(v2, v1);
-    real_t denom = d00 * d11 - d01 * d01;
-    out_v = (d11 * d20 - d01 * d21) / denom;
-    out_w = (d00 * d21 - d01 * d20) / denom;
-    out_u = to_real(1.0) - out_v - out_w;
-}
 
 /*source:
 https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
@@ -274,18 +265,19 @@ static inline void Barycentric(
     const std::array<vec2,3> &triangle,
     vec3 &out_uvw)
 {
-    vec2 v0 = triangle[1] - triangle[0];
-    vec2 v1 = triangle[2] - triangle[0];
-    vec2 v2 = p - triangle[0];
+    const vec2 v0 = triangle[1] - triangle[0];
+    const vec2 v1 = triangle[2] - triangle[0];
+    const vec2 v2 = p - triangle[0];
 
-    real_t d00 = glm::dot(v0, v0);
-    real_t d01 = glm::dot(v0, v1);
-    real_t d11 = glm::dot(v1, v1);
-    real_t d20 = glm::dot(v2, v0);
-    real_t d21 = glm::dot(v2, v1);
-    real_t denom = d00 * d11 - d01 * d01;
-    out_uvw.y = (d11 * d20 - d01 * d21) / denom;
-    out_uvw.z = (d00 * d21 - d01 * d20) / denom;
+    const real_t d00 = glm::dot(v0, v0);
+    const real_t d01 = glm::dot(v0, v1);
+    const real_t d11 = glm::dot(v1, v1);
+    const real_t d20 = glm::dot(v2, v0);
+    const real_t d21 = glm::dot(v2, v1);
+    const real_t denom = d00 * d11 - d01 * d01;
+    const real_t inv_denom = to_real(1.0) / denom;
+    out_uvw.y = (d11 * d20 - d01 * d21) * inv_denom;
+    out_uvw.z = (d00 * d21 - d01 * d20) * inv_denom;
     out_uvw.x = to_real(1.0) - out_uvw.y - out_uvw.z;
 }
 

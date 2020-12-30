@@ -19,15 +19,15 @@ const bool GridSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
     
     bool hit = false;
 
-    auto &triangles = m_lmb->GetTriangles();
+    auto &triangles = GetLMB()->GetTriangles();
 
     for(size_t i=0;i<m_grid.size();i++)
     {
-        auto &cell_triangles = m_grid[i].GetTriangles();
+        auto &cell_triangles = m_grid[i].m_triangle_indexes;
 
 
         real_t bboxt = 0;
-        if(IntersectAABB3D(r,m_grid[i].GetAABB(),bboxt))
+        if(IntersectAABB3D(r,m_grid[i].m_bbox,bboxt))
         {
             for(size_t j=0;j<cell_triangles.size();j++)
             {
@@ -101,54 +101,26 @@ void GridSolver::Gen()
         bbox.SetMax(b_max);
         bbox.SetMin(b_min);
 
-        m_grid.push_back(bbox);
-        GenCellTriangles(m_grid.size()-1);
 
-        if(m_grid[m_grid.size()-1].GetTriangles().size() <= 0)
-            m_grid.pop_back();
+        auto tri = std::move(IntersectTriangleAABB(bbox));
+
+        if(tri.size() > 0)
+        {
+            Dump_Push(AABB3D,bbox);
+            m_grid.push_back(GridCell());
+            m_grid[m_grid.size()-1].m_bbox = bbox;
+            m_grid[m_grid.size()-1].m_triangle_indexes = std::move(tri);
+        }
 
         INCREMENT3D(x,y,z,m_num_cells)
     }
 
-}
+    Dump_Term(AABB3D);
 
 
-
-
-
-void GridSolver::GenCellTriangles(const size_t index)
-{
-    auto &triangles = m_lmb->GetTriangles();
-
-    size_t count=0;
-
-    for(size_t i=0;i<triangles.size();i++)
+    for(size_t c = 0;c < m_grid.size();c++)
     {
-        if(Intersect2AABB3D(m_grid[index].GetAABB(),triangles[i].GetAABB()))
-        {
-            m_grid[index].AddTriangle(i);
-            ++count;
-        }
-        else
-        {
-            bool inside = false;
-
-            for(int v=0;v<triangles[i].GetPos().size();v++)
-            {
-                if(PointInsideBox(
-                    triangles[i].GetPos()[v],
-                    m_grid[index].GetAABB().GetMin(),
-                    m_grid[index].GetAABB().GetMax()
-                )) inside=true;
-            }
-
-            if(inside)
-            {
-                m_grid[index].AddTriangle(i);
-                ++count;
-            }
-
-        }
+        printf("grid cell%d = %d \n",c,m_grid[c].m_triangle_indexes.size());
     }
 
 }

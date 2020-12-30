@@ -9,12 +9,12 @@ namespace LMB
 
 
 
-class DenoisCalculator : public Calculator
+class DenoiseCalculator : public Calculator
 {
 
 public:
 
-    DenoisCalculator(const uint8_t num_iterations,const real_t contributing_amount)
+    DenoiseCalculator(const uint8_t num_iterations,const real_t contributing_amount)
     {
         m_iteration = num_iterations;
         m_amount = contributing_amount;
@@ -29,25 +29,26 @@ public:
         int ix = x;
         int iy = y;
 
-        for(bitmap_size_t sx= ix-1;sx<(ix+2);sx++)
+        const int num_samples = 2;
+
+        for(bitmap_size_t sy= iy-num_samples;sy<=(iy+num_samples);sy++)
         {
-            for(bitmap_size_t sy= iy-1;sy<(iy+2);sy++)
+            for(bitmap_size_t sx= ix-num_samples;sx<=(ix+num_samples);sx++)
             {
                 if(sx==x && sy==y)
                     continue;
 
-                if(sx == sy)
+                if(GetRealFlags(sx,sy) == Lightmap::EFlags::UnUsed)
                     continue;
 
-                if(m_lightmap->GetFlags().GetPixel(sx,sy) == Lightmap::EFlags::Used)
-                {
-                    ++n;
-                    col +=m_lightmap->GetColor().GetPixel(sx,sy);
-                }
+                ++n;
+                
+                col += GetColor(sx,sy);
+                
             }
         }
 
-        if(n <=0)
+        if(n <= 0)
             return vec4(0,0,0,0);
 
         col /=n;
@@ -56,37 +57,44 @@ public:
 
     void PixelSimilarityBlur(const bitmap_size_t x,const bitmap_size_t y)
     {
-        if(m_lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
+        if(GetRealFlags(x,y) == Lightmap::EFlags::UnUsed)
             return;
         
-        const vec4 a = GetPixelAvrg(x,y);
+        const vec3 a = GetPixelAvrg(x,y);
 
-        vec4 c = m_lightmap->GetColor().GetPixel(x,y);
+        vec3 c = GetColor(x,y);
+        
+        const vec3 luminance = vec3(0.2125, 0.7154, 0.0721);
 
-        const real_t vec3_len = glm::length(vec3(1));
+        const real_t c_lum = glm::dot(luminance,c);
+        const real_t a_lum = glm::dot(luminance,a);
 
-        const real_t sim = to_real(1.0) - (glm::length(vec3(a)-vec3(c)) / vec3_len);
+        const real_t sim = to_real(1.0) - glm::min(a_lum-c_lum,to_real(1.0));
 
         const real_t amount = glm::min(m_amount * sim,to_real(1.0));
 
         c = glm::lerp(c,a,amount);
 
-        m_lightmap->GetColor().SetPixel(x,y,c);
+        SetColor(x,y,vec4(c,to_real(1.0)));
     }
 
     void SimiarityBlur()
     {
-        for(bitmap_size_t x=0;x<m_lightmap->GetColor().GetWidth();x++)
+        for(bitmap_size_t y=0;y<GetLightmapHeight();y++)
         {
-            for(bitmap_size_t y=0;y<m_lightmap->GetColor().GetHeight();y++)
+            for(bitmap_size_t x=0;x<GetLightmapWidth();x++)
             {
                 PixelSimilarityBlur(x,y);
             }   
         }
     }
 
-    void StartCalc()
+    void StartCalc(const size_t lightmap)
     {
+        Calculator::StartCalc(lightmap);
+
+        CopyRealColorToTemp();
+
         for(size_t i=0;i<m_iteration;i++)
         {
             SimiarityBlur();
@@ -98,9 +106,9 @@ public:
 
     }
 
-    const size_t GetProgress()
+    const Progress<0,100> GetProgress() const
     {
-        return 100;
+        return Progress<0,100>(100);
     }
 
 protected:

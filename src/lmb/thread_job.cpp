@@ -5,6 +5,15 @@
 namespace LMB
 {
 
+std::vector<std::thread>                JobManager::m_threads;
+std::vector<JobManager::EThreadState>   JobManager::m_threads_state;
+std::vector<std::shared_ptr<Job>>       JobManager::m_jobs;
+std::mutex                              JobManager::m_mutex;
+std::condition_variable                 JobManager::m_cv;
+size_t                                  JobManager::m_job_start;
+size_t                                  JobManager::m_num_threads;
+bool                                    JobManager::m_end;
+
 
 void JobManager::ThreadExec(size_t thread_index)
 {
@@ -54,12 +63,9 @@ void JobManager::ThreadExec(size_t thread_index)
     m_threads_state[thread_index] = EThreadState::Ended;
 }
 
-JobManager::JobManager()
+void JobManager::Init()
 {
     m_num_threads = std::thread::hardware_concurrency();
-    //m_num_threads = 1;
-    
-    //printf("JobManager started\n");
     m_end = false;
     m_job_start=0;
 
@@ -68,24 +74,20 @@ JobManager::JobManager()
     for(int i=0;i<m_num_threads;i++)
     {
         m_threads_state.push_back(EThreadState::Waiting);
-        m_threads.push_back(std::move(std::thread(&JobManager::ThreadExec,this,m_threads.size())));
+        m_threads.push_back(std::move(std::thread(&JobManager::ThreadExec,m_threads.size())));
     }
 }
 
-JobManager::~JobManager()
-{
-    End();
-}
-
-void JobManager::End()
+void JobManager::Term()
 {
     m_end = true;
+    m_cv.notify_all();
     for(int i=0;i<m_threads.size();i++)
         if(m_threads[i].joinable())
             m_threads[i].join();
 }
 
-void JobManager::Push(std::shared_ptr<Job> job)
+void JobManager::Push(const std::shared_ptr<Job> &job)
 {
     std::unique_lock<std::mutex> jobs_lock(m_mutex);
     m_jobs.push_back(job);

@@ -3,6 +3,9 @@
 //#define LMB_DOUBLE
 
 #include <glm/glm.hpp>
+#include <memory>
+#include <vector>
+
 
 
 namespace LMB
@@ -33,8 +36,6 @@ typedef int int32_t;
     typedef glm::vec4 vec4;
 
 #endif
-
-
 
 
 constexpr real_t to_real(const real_t r)

@@ -19,4 +19,6 @@ target_include_directories(
 target_link_libraries(
     lmb_example 
     lmb
+    ${CMAKE_SOURCE_DIR}/third_party/libs/SDL2/libSDL2-2.0.dylib
+    "-framework OpenGL"
 )

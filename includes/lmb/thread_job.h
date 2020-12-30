@@ -39,7 +39,7 @@ private:
 
 };
 
-class JobManager final : public Singleton<JobManager>
+class JobManager
 {
 
 public:
@@ -57,33 +57,31 @@ protected:
 
 public:
 
-    JobManager();
+    static void Init();
 
-    ~JobManager();
+    static void Term();
 
-    void End();
+    static void Push(const std::shared_ptr<Job> &job);
 
-    void Push(std::shared_ptr<Job> job);
-
-    inline const size_t GetNumThreads()
+    static inline const size_t GetNumThreads()
     {
         return m_num_threads;
     }
 
 protected:
 
-    void ThreadExec(size_t thread_index);
+    static void ThreadExec(size_t thread_index);
 
 protected:
 
-    std::vector<std::thread>            m_threads;
-    std::vector<EThreadState>           m_threads_state;
-    std::vector<std::shared_ptr<Job>>   m_jobs;
-    std::mutex                          m_mutex;
-    std::condition_variable             m_cv;
-    size_t                              m_job_start;
-    size_t                              m_num_threads;
-    bool                                m_end;
+    static std::vector<std::thread>            m_threads;
+    static std::vector<EThreadState>           m_threads_state;
+    static std::vector<std::shared_ptr<Job>>   m_jobs;
+    static std::mutex                          m_mutex;
+    static std::condition_variable             m_cv;
+    static size_t                              m_job_start;
+    static size_t                              m_num_threads;
+    static bool                                m_end;
 };
 
 }

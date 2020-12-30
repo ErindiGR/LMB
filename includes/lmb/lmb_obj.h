@@ -17,9 +17,11 @@ public:
         m_lmb = nullptr;
     }
 
-    void SetLmb(LMBSession* lmb);
+    void SetLMB(LMBSession* lmb);
 
-protected:
+    LMBSession* GetLMB()const;
+
+private:
 
    LMBSession* m_lmb;
    
