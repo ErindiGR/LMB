@@ -4,6 +4,10 @@ file(
     "*.cpp"
 )
 
+add_definitions(
+    -DDRAW
+)
+
 
 add_executable(
     lmb_example ${LMBEXAMPLE_SRC}

@@ -18,8 +18,8 @@ public:
 
 	enum class EFlags : unsigned char
 	{
-		UnUsed,
-		Used
+		UnUsed = 0,
+		Used = 1
 	};
 
 public:
@@ -50,6 +50,10 @@ public:
 		m_flags.Copy(Bitmap(m_size,m_size,EFlags::UnUsed));
 		m_positions.Copy(Bitmap(m_size,m_size,vec3(0)));
 		m_normals.Copy(Bitmap(m_size,m_size,vec3(0)));
+
+		m_colors.SetInterpolate(true);
+		m_positions.SetInterpolate(true);
+		m_normals.SetInterpolate(true);
 	}
 
 	inline Bitmap<vec3>& GetPos()
@@ -81,12 +85,6 @@ public:
 	{
 		return m_size;
 	}
-
-	void GenPosAndNorm(const std::vector<Triangle>& triangles);
-
-	void GenPixelPositions(const size_t x, const size_t y,const std::vector<Triangle>& triangles);
-	
-	void GenPixelNormal(const size_t x, const size_t y,const std::vector<Triangle>& triangles);
 
 
 protected:

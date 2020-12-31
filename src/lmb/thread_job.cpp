@@ -83,8 +83,7 @@ void JobManager::Term()
     m_end = true;
     m_cv.notify_all();
     for(int i=0;i<m_threads.size();i++)
-        if(m_threads[i].joinable())
-            m_threads[i].join();
+        m_threads[i].join();
 }
 
 void JobManager::Push(const std::shared_ptr<Job> &job)

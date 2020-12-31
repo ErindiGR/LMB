@@ -8,18 +8,42 @@
 #include <lmb/calculators/denois_calculator.h>
 #include <lmb/calculators/padding_calculator.h>
 
+using namespace LMB;
 
-#include "obj_loader.h"
+
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
 
-using namespace LMB;
-
+#include "obj_loader.h"
 #include "display.h"
 
+
+#define OBJ_FILE "scene2.1.obj"
+#define TEXTURE_ALBEDO "scene2.1_texture.png"
+#define TEXTURE_EMISSIVE "scene2.1_emissive.png"
+
+
+
+std::shared_ptr<Bitmap<vec4>> LoadBitmap(const char * filename)
+{
+	int texture_w =0,texture_h=0,texture_c=0;
+
+	stbi_uc* texture_data = stbi_load(filename,&texture_w,&texture_h,&texture_c,4);
+
+	Bitmap<RGBA8> texture(texture_w,texture_h);
+
+	std::memcpy(texture.GetData(),texture_data,texture_w*texture_h*texture_c);
+
+	std::shared_ptr<Bitmap<vec4>> ret = std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture));
+	
+	BitmapUtils::FlipV(*ret.get());
+
+	return ret;
+}
 
 
 int main()
@@ -36,38 +60,16 @@ int main()
 	//Load .obj file
 	objl::Loader obj_loader;
 
-	obj_loader.LoadFile("scene2.1.obj");
+	obj_loader.LoadFile(OBJ_FILE);
 
 
 	//Load textures
-	int texture_w =0,texture_h=0,texture_c=0;
-
-	stbi_uc* texture_data = stbi_load("scene2.1_texture.png",&texture_w,&texture_h,&texture_c,4);
-
-	Bitmap<RGBA8> texture(texture_w,texture_h);
-
-	std::memcpy(texture.GetData(),texture_data,texture_w*texture_h*texture_c);
-
-	auto texture_vec4 = std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture));
-
-	auto texture_color = lmb->AddBitmap(texture_vec4);
-
-	BitmapUtils::FlipV(*(texture_vec4.get()));
+	auto texture_albedo = lmb->AddBitmap(LoadBitmap(TEXTURE_ALBEDO));
 
 
-	texture_data = stbi_load("scene2.1_emissive.png",&texture_w,&texture_h,&texture_c,4);
+	auto texture_emissive = lmb->AddBitmap(LoadBitmap(TEXTURE_EMISSIVE));
 
-	Bitmap<RGBA8> texture2(texture_w,texture_h);
-
-	std::memcpy(texture2.GetData(),texture_data,texture_w*texture_h*texture_c);
-
-	texture_vec4 = std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture2));
-
-	BitmapUtils::Multiply(*(texture_vec4.get()),6);
-
-	auto texture_emissive = lmb->AddBitmap(texture_vec4);
-
-	BitmapUtils::FlipV(*(texture_vec4.get()));
+	BitmapUtils::Multiply(*(texture_emissive.Get().get()),6);
 	
 
 	for(size_t j=0;j<obj_loader.LoadedMeshes.size();j++)
@@ -79,7 +81,7 @@ int main()
 		TriangleInfo triangle_info;
 
 		triangle_info.SetLightmap(lightmap);
-		triangle_info.SetAlbedo(texture_color);
+		triangle_info.SetAlbedo(texture_albedo);
 		triangle_info.SetEmissive(texture_emissive);
 
 		//Add TriangleInfo to LMBSession
@@ -161,7 +163,8 @@ int main()
 	//Set the calculator blend mode default is BlendSet
 	calc->SetBlend(std::make_shared<CalcBlendAdd>());
 
-#if 0
+#if 1
+	//Create a directional light and add it to the calculator
 	Light dir_light(Light::EType::Directional);
 	dir_light.SetDir(glm::normalize(vec3(1,1,1)));
 	dir_light.SetSoftness(0.1);
@@ -170,9 +173,10 @@ int main()
 #endif
 
 #if 0
+	//Create a point light and add it to the calculator
 	Light point_light(Light::EType::Point);
 	point_light.SetPos(vec3(-1,0.0,0));
-	point_light.SetColor(vec3(1));
+	point_light.SetColor(vec3(1,0,0));
 	point_light.SetSoftness(0.05);
 	calc->AddLight(point_light);
 #endif

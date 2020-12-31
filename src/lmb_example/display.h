@@ -6,16 +6,18 @@
 #include <vector>
 #include <memory>
 
+#ifdef DRAW
+
+SDL_Window* g_window;
+SDL_GLContext g_glcontext;
 
 
-SDL_Window* window;
-SDL_GLContext gl_context;
 void InitDisplay()
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-    window = SDL_CreateWindow("LMB Example",0,0,400,400,SDL_WINDOW_OPENGL);
-    gl_context = SDL_GL_CreateContext(window);
+    g_window = SDL_CreateWindow("LMB Example",0,0,400,400,SDL_WINDOW_OPENGL);
+    g_glcontext = SDL_GL_CreateContext(g_window);
 }
 
 std::vector<GLuint> g_lightmaps;
@@ -115,13 +117,13 @@ void DrawWorld(const std::shared_ptr<LMB::LMBSession> &lmb)
 	}
 	glEnd();
 
-	SDL_GL_SwapWindow(window);
+	SDL_GL_SwapWindow(g_window);
 }
 
 void TermDisplay()
 {
-	SDL_GL_DeleteContext(gl_context);
-    SDL_DestroyWindow(window);
+	SDL_GL_DeleteContext(g_glcontext);
+    SDL_DestroyWindow(g_window);
     SDL_Quit();
 }
 
@@ -137,3 +139,13 @@ void DrawCalcResult(std::shared_ptr<LMBSession> lmb)
 		std::this_thread::sleep_for(std::chrono::milliseconds(16));
 	}
 }
+
+#else
+
+#define InitDisplay()
+#define BindLigthmaps(x)
+#define DrawWorld(x)
+#define TermDisplay()
+#define DrawCalcResult(x)
+
+#endif

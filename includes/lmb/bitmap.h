@@ -128,32 +128,28 @@ public:
 
 	const T& GetPixel(const bitmap_size_t x,const bitmap_size_t y) const
 	{
-		const size_t rx = NegModul(x,m_width);
-		const size_t ry = NegModul(y,m_height);
+		const size_t rx = NegModule(x,m_width);
+		const size_t ry = NegModule(y,m_height);
 
 		return m_pixels[ry * m_width + rx];
 	}
 
 	const T GetPixel(const real_t x,const real_t y) const
 	{
-		const bitmap_size_t x_min = std::floorf(x * m_width);
-		const bitmap_size_t y_min = std::floorf(y * m_height);
+		const real_t xf = x*m_width;
+		const real_t yf = y*m_height;
 
-		return GetPixel(x_min,y_min);
-		/*const real_t xf = x-();
-		const real_t yf = y-();
-
-		const bitmap_size_t x_min = std::floorf(xf*m_width);
-		const bitmap_size_t y_min = std::floorf(yf*m_height);
+		const bitmap_size_t x_min = std::floorf(xf);
+		const bitmap_size_t y_min = std::floorf(yf);
 
 		if(!m_flags.interpolate)
 			return GetPixel(x_min,y_min);
 
-		const bitmap_size_t x_max = std::ceilf(xf*m_width);
-		const bitmap_size_t y_max = std::ceilf(yf*m_height);
+		const bitmap_size_t x_max = std::ceilf(xf);
+		const bitmap_size_t y_max = std::ceilf(yf);
 
-		const real_t tx = (xf*m_width)-(bitmap_size_t)(xf*m_width);
-		const real_t ty = (yf*m_height)-(bitmap_size_t)(yf*m_height);
+		const real_t tx = (xf)-x_min;
+		const real_t ty = (yf)-y_min;
 
 		const T tl = GetPixel(x_max,y_min);
 		const T tr = GetPixel(x_max,y_max);
@@ -164,13 +160,12 @@ public:
 		const T b = Lerp(bl,br,tx);
 
 		return Lerp(t,b,ty);
-		*/
 	}
 
 	void SetPixel(const bitmap_size_t x,const bitmap_size_t y,const T& val)
 	{
-		const size_t rx = NegModul(x,m_width);
-		const size_t ry = NegModul(y,m_height);
+		const size_t rx = NegModule(x,m_width);
+		const size_t ry = NegModule(y,m_height);
 		m_pixels[ry * m_width + rx]  = val;
 	}
 
@@ -180,6 +175,18 @@ public:
 		m_width = bitmap.m_width;
 		m_height = bitmap.m_height;
 		m_flags = bitmap.m_flags;
+	}
+
+	void Move(Bitmap<T> &bitmap)
+	{
+		m_pixels = std::move(bitmap.m_pixels);
+		m_width = bitmap.m_width;
+		m_height = bitmap.m_height;
+		m_flags = bitmap.m_flags;
+
+		bitmap.m_width = 0;
+		bitmap.m_height = 0;
+		bitmap.m_flags.interpolate = false;
 	}
 
 	T* GetData()
@@ -198,6 +205,10 @@ public:
 		return m_height;
 	}
 
+	void SetInterpolate(bool interpolate)
+	{
+		m_flags.interpolate = interpolate;
+	}
 
 protected:
 

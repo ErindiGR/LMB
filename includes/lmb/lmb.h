@@ -56,8 +56,10 @@ public:
 
 	inline void SetSolver(std::shared_ptr<Solver> &solver)
 	{
-
 		EndCalc();
+
+		if(solver->HasLMB())
+			return;
 
 		m_solver = std::move(solver);
 		m_solver->SetLMB(this);
@@ -72,6 +74,9 @@ public:
 	inline void SetCalculator(const std::shared_ptr<Calculator> &calculator)
 	{
 		EndCalc();
+
+		if(calculator->HasLMB())
+			return;
 
 		m_calc = calculator;
 		m_calc->SetLMB(this);

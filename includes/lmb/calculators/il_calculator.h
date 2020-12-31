@@ -73,8 +73,8 @@ inline const SGICalcConfig default_il_config =
 .max_angle = to_real(89.0),
 .ray_distance = to_real(1000.0),
 .bias = to_real(1.0)/to_real(1024.0),
-.num_rays = 32,
-.num_final_rays = 128,
+.num_rays = 64,
+.num_final_rays = 246,
 .num_bounces = 4
 };
 

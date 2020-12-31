@@ -21,6 +21,11 @@ public:
 
     LMBSession* GetLMB()const;
 
+    bool HasLMB()
+    {
+        return (m_lmb);
+    }
+
 private:
 
    LMBSession* m_lmb;

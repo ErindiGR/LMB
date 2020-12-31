@@ -1,7 +1,5 @@
 #pragma once
 
-//#define LMB_DOUBLE
-
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
@@ -48,7 +46,7 @@ constexpr real_t to_real(const real_t r)
 
 
 template<typename T>
-constexpr T NegModul(const T &a,const T &b)
+constexpr T NegModule(const T &a,const T &b)
 {
     if(a<0)
     {
