@@ -9,6 +9,10 @@ indirect lighting, denoising and more to come in the future.You can also extend 
 
 # Third Party Libraries
 
+* STD:
+    * link: https://github.com/nothings/stb
+    * license (MIT): https://github.com/nothings/stb/blob/master/LICENSE
+
 * Imgui:
     * link: https://github.com/ocornut/imgui
     * license (MIT): https://github.com/ocornut/imgui/blob/master/LICENSE.txt
@@ -31,6 +35,11 @@ indirect lighting, denoising and more to come in the future.You can also extend 
 
 # Build
 
+1. Copy glm,SDL2,stb include folder to location third_party/includes/
+
+2. Copy SDL2 bin library to location third_party/libs/SDL2/
+
+
 Release build:
 
     $ sh build_release.sh
@@ -38,6 +47,10 @@ Release build:
 Debug build:
 
     $ sh build_debug.sh
+
+CMake build:
+    
+    cmake -S ./ -B build/
 
 
 # Usage
@@ -95,11 +108,11 @@ int main()
 # Result Screen Shots
 
 * Direct lighting,Indirect lighting,Ambient Occlusion:
-    ![screenshot](screenshots/Screen_Shot2.png)
-    ![screenshot](screenshots/Screen_Shot4.png)
+    ![screenshot](./screenshots/Screen_Shot2.png)
+    ![screenshot](./screenshots/Screen_Shot4.png)
 * Direct lighting,Indirect lighting,Ambient Occlusion,Denoising:
-    ![screenshot](screenshots/Screen_Shot.png)
-    ![screenshot](screenshots/Screen_Shot6.png)
+    ![screenshot](./screenshots/Screen_Shot.png)
+    ![screenshot](./screenshots/Screen_Shot6.png)
 * Direct lighting,Indirect lighting,Ambient Occlusion,Denoising,Transparency:
-    ![screenshot](screenshots/Screen_Shot3.png)
-    ![screenshot](screenshots/Screen_Shot5.png)
+    ![screenshot](./screenshots/Screen_Shot3.png)
+    ![screenshot](./screenshots/Screen_Shot5.png)
