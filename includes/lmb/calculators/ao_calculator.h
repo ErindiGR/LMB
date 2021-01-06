@@ -41,7 +41,7 @@ inline const SAOCalcConfig default_ao_config =
 .max_angle = to_real(89.9),
 .ray_distance = to_real(1.0),
 .bias = to_real(1.0)/to_real(1024.0),
-.num_rays = 32
+.num_rays = 128
 };
 
 /**

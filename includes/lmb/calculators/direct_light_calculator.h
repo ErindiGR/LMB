@@ -101,7 +101,7 @@ struct SDLCalcConfig
 inline SDLCalcConfig default_dl_config
 {
 .use_emissive = true,
-.mun_emissive_rays = 32,
+.mun_emissive_rays = 256,
 .num_rays = 128,
 .max_ray_distance = to_real(10000.0),
 .bias = to_real(1.0)/to_real(1024.0),

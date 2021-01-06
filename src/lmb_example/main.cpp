@@ -86,7 +86,7 @@ int main()
 	for(size_t j=0;j<obj_loader.LoadedMeshes.size();j++)
 	{
 		//Create lightmap
-		LightmapHandle lightmap = lmb->AddLightmap(64);
+		LightmapHandle lightmap = lmb->AddLightmap(256);
 
 		//Create triangle info
 		TriangleInfo triangle_info;
