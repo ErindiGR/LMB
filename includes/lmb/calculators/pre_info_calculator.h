@@ -23,7 +23,7 @@ public:
         const size_t lightmap,
         PreInfoCalculator* calc);
 
-    void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
+    void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y) override;
 
 };
 
@@ -40,7 +40,7 @@ class PreInfoCalculator : public JobBaseCalculator
 
 public:
 
-    void StartCalc(const size_t lightmap);
+    void StartCalc(const size_t lightmap) override;
 
     void GenerateGrid();
 

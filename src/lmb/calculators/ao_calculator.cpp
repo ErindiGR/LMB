@@ -8,69 +8,6 @@
 namespace LMB
 {
 
-
-
-AOJob::AOJob( 
-    const size_t x_start,
-    const size_t y_start,
-    const size_t x_end,
-    const size_t y_end,
-    const size_t lightmap,
-    class AOCalculator* aocalc)
-: LightmapChunkJob(x_start,y_start,x_end,y_end,lightmap,aocalc)
-{
-}
-
-void AOJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
-{
-    auto &temp_lightmap = m_calc->GetTempLightmapColor(m_lightmap);
-    auto &lightmap = m_calc->GetRealLightmap(m_lightmap);
-
-    if(lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
-        return;
-
-    const vec2 pixel_pos = GetPixelCenter(x,y);
-
-    const vec4 ao = ((AOCalculator*)m_calc)->CalcPixel(
-        lightmap->GetPos().GetPixel(pixel_pos.x,pixel_pos.y),
-        lightmap->GetNorm().GetPixel(pixel_pos.x,pixel_pos.y));
-
-    temp_lightmap->SetPixel(x,y,ao);
-}
-
-void AOCalculator::StartCalc(const size_t lightmap)
-{
-    Calculator::StartCalc(lightmap);
-
-    DEBUG_LOG("Started Calculating AO.\n");
-
-    size_t chunk_size = std::max((int)(GetLightmapWidth()/(JobManager::GetNumThreads()*2)),1);
-
-    for(size_t x=0;x<GetLightmapWidth()/chunk_size;x++)
-    {
-        for(size_t y=0;y<GetLightmapHeight()/chunk_size;y++)
-        {
-            std::shared_ptr<Job> job = std::make_shared<AOJob>(
-                x*chunk_size,
-                y*chunk_size,
-                (x+1)*chunk_size,
-                (y+1)*chunk_size,
-                m_current_lightmap_handle,
-                this
-            );
-
-            m_jobs.push_back(job);
-            JobManager::Push(std::static_pointer_cast<Job>(job));
-        }
-    }
-
-
-}
-
-
-
-
-
 vec4 AOCalculator::CalcPixel(
     const vec3 &world_pos,
     const vec3 &world_norm)

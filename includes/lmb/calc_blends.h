@@ -27,7 +27,7 @@ class CalcBlendMul : public CalcBlendSet
 
 public:
 
-    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const override
     {
         return rh * lh;
     };
@@ -40,7 +40,7 @@ class CalcBlendAdd : public CalcBlendSet
 
 public:
 
-    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const override
     {
         return rh + lh;
     };
@@ -52,7 +52,7 @@ class CalcBlendMax : public CalcBlendSet
 
 public:
 
-    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const override
     {
         return glm::max(rh,lh);
     };
@@ -64,9 +64,9 @@ class CalcBlendAvrg : public CalcBlendSet
 
 public:
 
-    const vec4 Blend(const vec4 &rh,const vec4 &lh) const
+    const vec4 Blend(const vec4 &rh,const vec4 &lh) const override
     {
-        return rh / to_real(2.0) + lh / to_real(2.0);
+        return rh * to_real(0.5) + lh * to_real(0.5);
     };
 
 };

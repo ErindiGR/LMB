@@ -22,8 +22,8 @@ class DefaultSolver : public Solver
 public:
 
     //Solver
-    void Gen();
-    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;
+    void Gen() override;
+    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const override;
     //!Solver
 
     const bool IntersectTriangle(

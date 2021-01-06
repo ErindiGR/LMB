@@ -33,7 +33,7 @@ class KDTreeSolver : public AABBBaseSolver
 {
 
 public:
-    void Gen();
+    void Gen() override;
 
     /**
      * @brief Spilits a Cell
@@ -44,7 +44,7 @@ public:
      */
     bool SplitCell(const size_t cell);
 
-    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;
+    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const override;
 
     const void IntersectCell(Ray &ray,const size_t cell,SHitInfo &hit_info,bool &hit) const;
 

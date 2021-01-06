@@ -21,7 +21,7 @@ public:
      * @copydoc LMB::Calculator::GetProgress()
      * 
      */
-    const Progress<0,100> GetProgress() const
+    const Progress<0,100> GetProgress() const override
     {
         size_t completed = 0;
 
@@ -36,7 +36,7 @@ public:
      * @copydoc ICalculable::EndCalc()
      * 
      */
-    void EndCalc()
+    void EndCalc() override
     { 
         while(1)
         {

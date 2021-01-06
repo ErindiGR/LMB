@@ -21,6 +21,8 @@ const bool GridSolver::Intersect(const Ray &ray,SHitInfo &out_hit_info) const
 
     auto &triangles = GetLMB()->GetTriangles();
 
+    
+
     for(size_t i=0;i<m_grid.size();i++)
     {
         auto &cell_triangles = m_grid[i].m_triangle_indexes;
@@ -120,7 +122,7 @@ void GridSolver::Gen()
 
     for(size_t c = 0;c < m_grid.size();c++)
     {
-        printf("grid cell%d = %d \n",c,m_grid[c].m_triangle_indexes.size());
+        DEBUG_LOG("grid cell%lu = %lu \n",c,m_grid[c].m_triangle_indexes.size());
     }
 
 }

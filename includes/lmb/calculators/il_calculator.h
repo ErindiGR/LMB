@@ -15,7 +15,6 @@
 namespace LMB
 {
 
-
 class ILJob final : public LightmapChunkJob
 {
 
@@ -38,7 +37,6 @@ protected:
 
     uint16_t m_bounce;
 };
-
 
 /**
  * @brief the configuration setting for AOCalculator
@@ -73,8 +71,8 @@ inline const SGICalcConfig default_il_config =
 .max_angle = to_real(89.0),
 .ray_distance = to_real(1000.0),
 .bias = to_real(1.0)/to_real(1024.0),
-.num_rays = 64,
-.num_final_rays = 246,
+.num_rays = 32,
+.num_final_rays = 64,
 .num_bounces = 4
 };
 
@@ -86,12 +84,12 @@ class IndirectLightCalculator : public JobBaseCalculator
 
 public:
 
-    IndirectLightCalculator(const SGICalcConfig &config)
+    explicit IndirectLightCalculator(const SGICalcConfig &config)
     : m_config(config)
     {
     }
 
-    void StartCalc(const size_t lightmap);
+    void StartCalc(const size_t lightmap) override;
 
     vec4 CalcPixel(
         const vec3 &world_pos,

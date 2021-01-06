@@ -2,7 +2,6 @@
 #pragma once
 
 
-#include "lmb/calculators/job_base_calculator.h"
 #include "lmb/calculators/lightmap_chunks_job.h"
 #include "lmb/lightmap.h"
 #include "lmb/thread_job.h"
@@ -16,26 +15,6 @@
 
 namespace LMB
 {
-
-
-class AOJob final : public LightmapChunkJob
-{
-
-public:
-
-    AOJob( 
-        const size_t x_start,
-        const size_t y_start,
-        const size_t x_end,
-        const size_t y_end,
-        const size_t lightmap,
-        class AOCalculator* calc);
-
-    //LightmapChunkJob
-    void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
-    //!LightmapChunkJob
-};
-
 
 /**
  * @brief the configuration setting for AOCalculator
@@ -59,30 +38,28 @@ struct SAOCalcConfig
 
 inline const SAOCalcConfig default_ao_config =
 {
-.max_angle = to_real(85.0),
+.max_angle = to_real(89.9),
 .ray_distance = to_real(1.0),
 .bias = to_real(1.0)/to_real(1024.0),
-.num_rays = 128
+.num_rays = 32
 };
 
 /**
 * @brief Calculates Ambient occlusion
 */
-class AOCalculator : public JobBaseCalculator
+class AOCalculator : public LightmapChunkJobBaseCalculator
 {
 
 public:
 
-    AOCalculator(const SAOCalcConfig &config)
+    explicit AOCalculator(const SAOCalcConfig &config)
     : m_config(config)
     {
     }
 
-    void StartCalc(const size_t lightmap);
-
     vec4 CalcPixel(
         const vec3 &world_pos,
-        const vec3 &world_norm);
+        const vec3 &world_norm) override;
 
     const std::vector<Ray> GenRays(
         const vec3 &pos,
@@ -93,8 +70,6 @@ public:
         const Solver::SHitInfo &hit);
 
 protected:
-
-    friend AOJob;
 
     SAOCalcConfig m_config;
 };

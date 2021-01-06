@@ -1,6 +1,5 @@
 #pragma once
 
-#include "lmb/calculators/job_base_calculator.h"
 #include "lmb/calculators/lightmap_chunks_job.h"
 #include "lmb/thread_job.h"
 #include "lmb/base_type.h"
@@ -25,13 +24,13 @@ public:
         Point
     };
 
-    Light(const EType &type,const vec3 &color = vec3(1))
+    explicit Light(const EType &type)
+    :m_type(type)
+    ,m_position(0)
+    ,m_color(1)
+    ,m_direction(1)
+    ,m_softness(0.2)
     {
-        m_type = type;
-        m_position = vec3(0);
-        m_color = color;
-        m_direction = vec3(1);
-        m_softness = to_real(0.2);
     }
 
     const vec3 &GetPos()
@@ -89,23 +88,6 @@ protected:
     EType   m_type;
 };
 
-class DLJob final : public LightmapChunkJob
-{
-
-public:
-
-    DLJob(
-        const bitmap_size_t x_start,
-        const bitmap_size_t y_start,
-        const bitmap_size_t x_end,
-        const bitmap_size_t y_end,
-        const size_t lightmap,
-        class DirectLightCalculator* calc);
-
-    void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
-};
-
-
 struct SDLCalcConfig
 {
     bool        use_emissive;
@@ -119,9 +101,9 @@ struct SDLCalcConfig
 inline SDLCalcConfig default_dl_config
 {
 .use_emissive = true,
-.mun_emissive_rays = 256,
+.mun_emissive_rays = 32,
 .num_rays = 128,
-.max_ray_distance = to_real(1000000.0),
+.max_ray_distance = to_real(10000.0),
 .bias = to_real(1.0)/to_real(1024.0),
 .ambient_color = vec3(0)//vec3(to_real(0.1),to_real(0.1),to_real(0.15))
 };
@@ -130,24 +112,21 @@ inline SDLCalcConfig default_dl_config
  * @brief Calculates direct lighting from a light source
  * like a point light or a directional light
  */
-class DirectLightCalculator : public JobBaseCalculator
+class DirectLightCalculator : public LightmapChunkJobBaseCalculator
 {
 
 
 public:
 
-    DirectLightCalculator(const SDLCalcConfig &config)
+    explicit DirectLightCalculator(const SDLCalcConfig &config)
     : m_config(config)
     {
     }
     
-    //ICalculable
-    void StartCalc(const size_t lightmap);
-    //!ICalculable
 
     vec4 CalcPixel(
         const vec3 &world_pos,
-        const vec3 &world_norm);
+        const vec3 &world_norm) override;
 
     const vec3 CalcDirectionalLight(
         const vec3 &world_pos,
@@ -185,8 +164,6 @@ public:
 
 
 protected:
-
-    friend DLJob;
     
     std::vector<Light>  m_lights;
     SDLCalcConfig m_config;

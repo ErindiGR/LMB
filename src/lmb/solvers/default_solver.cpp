@@ -51,7 +51,7 @@ const bool DefaultSolver::IntersectTriangle(const Ray &ray,const Triangle &tri,v
     
     real_t t = 0;
     vec3 uvw(0);
-    auto &v = tri.GetPos();
+    const auto &v = tri.GetPos();
     bool res = rayTriangleIntersect(ray.GetStart(),
         ray.GetDir(),v[0],v[1],v[2],t,uvw.x,uvw.y);
 

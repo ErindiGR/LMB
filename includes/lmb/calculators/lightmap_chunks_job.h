@@ -3,6 +3,7 @@
 #include "lmb/thread_job.h"
 #include "lmb/lightmap.h"
 #include "lmb/calculator.h"
+#include "lmb/calculators/job_base_calculator.h"
 
 namespace LMB
 {
@@ -22,55 +23,15 @@ public:
         const bitmap_size_t x_end,
         const bitmap_size_t y_end,
         const size_t lightmap,
-        Calculator* calc)
-    {
-        m_x_start  = x_start;
-        m_y_start  = y_start;
-        m_x_end    = x_end;
-        m_y_end    = y_end;
-        m_lightmap = lightmap;
-        m_calc = calc;
-    }
+        Calculator* calc);
 
-    void Execute()
-    {
-        bitmap_size_t x = m_x_start;
-        bitmap_size_t y = m_y_start;
-        
-        size_t num_loops = (m_x_end - m_x_start) * (m_y_end - m_y_start);
-        
-        for(size_t i = 0;i < num_loops;i++)
-        {
-            CalculatePixel(x,y);
+    void Execute() override;
 
-            ++x;
-            if(x >= m_x_end)
-            {
-                x = m_x_start;
-                ++y;
-            }
-        }
-    }
+    const vec2 GetPixelCenter(const bitmap_size_t x,const bitmap_size_t y);
 
-    const vec2 GetPixelCenter(const bitmap_size_t x,const bitmap_size_t y)
-    {
-        auto &lightmap = m_calc->GetTempLightmapColor(m_lightmap);
-        const real_t xf = (x + to_real(0.5)) / to_real(lightmap->GetWidth());
-        const real_t yf = (y + to_real(0.5)) / to_real(lightmap->GetHeight());
+    const vec2 GetPixelPoint(const bitmap_size_t x,const bitmap_size_t y,const real_t r,const real_t t);
 
-        return vec2(xf,yf);
-    }
-
-    const vec2 GetPixelPoint(const bitmap_size_t x,const bitmap_size_t y,const real_t r,const real_t t)
-    {
-        auto &lightmap = m_calc->GetTempLightmapColor(m_lightmap);
-        const real_t xf = (x + r) / to_real(lightmap->GetWidth());
-        const real_t yf = (y + t) / to_real(lightmap->GetHeight());
-
-        return vec2(xf,yf);
-    }
-
-    virtual void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y) =0;
+    virtual void CalculatePixel(const bitmap_size_t x,const bitmap_size_t y);
 
 protected:
 
@@ -80,6 +41,22 @@ protected:
     bitmap_size_t m_y_end;
     size_t m_lightmap;
     Calculator* m_calc;
+    bool m_interpolate;
+};
+
+
+class LightmapChunkJobBaseCalculator : public JobBaseCalculator
+{
+
+public:
+
+    void StartCalc(const size_t lightmap) override;
+
+    virtual vec4 CalcPixel(
+        const vec3 &world_pos,
+        const vec3 &world_norm)=0;
+
+
 };
 
 

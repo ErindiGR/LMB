@@ -16,13 +16,14 @@ PreInfoJob::PreInfoJob(
     PreInfoCalculator* calc)
 : LightmapChunkJob(x_start,y_start,x_end,y_end,lightmap,calc)
 {   
+    m_interpolate = false;
 }
 
 void PreInfoJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
 {
     auto &temp_lightmap =  m_calc->GetTempLightmapColor(m_lightmap);
 
-    PreInfoCalculator* calc = (PreInfoCalculator*)m_calc;
+    PreInfoCalculator* calc = static_cast<PreInfoCalculator*>(m_calc);
 
     size_t cell_index = 0;
 
@@ -30,7 +31,7 @@ void PreInfoJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
         to_real(y) / temp_lightmap->GetHeight()),cell_index))
         return;
 
-    auto &triangles = m_calc->GetLMB()->GetTriangles();
+    const auto &triangles = m_calc->GetLMB()->GetTriangles();
     auto &triangle_indices = calc->m_grid[cell_index].triangle_indexes;
     auto &triangles_info = m_calc->GetLMB()->GetTrianglesInfo();
     auto &lightmap =  m_calc->GetRealLightmap(m_lightmap);
@@ -132,21 +133,23 @@ void PreInfoCalculator::StartCalc(const size_t lightmap)
     Calculator::StartCalc(lightmap);
 
     GenerateGrid();
+
+    CalcLightmapHelper calc_helper(lightmap,this);
     
     DEBUG_LOG("Started Calculating pre info .\n");
 
-    bitmap_size_t chunk_size = std::max((bitmap_size_t)(GetLightmapWidth()/(JobManager::GetNumThreads()*2)),1);
+    bitmap_size_t chunk_size = std::max((bitmap_size_t)(calc_helper.GetLightmapWidth()/(JobManager::GetNumThreads()*2)),1);
 
-    for(bitmap_size_t y=0;y<GetLightmapHeight()/chunk_size;y++)
+    for(bitmap_size_t y=0;y<calc_helper.GetLightmapHeight()/chunk_size;y++)
     {
-        for(bitmap_size_t x=0;x<GetLightmapWidth()/chunk_size;x++)
+        for(bitmap_size_t x=0;x<calc_helper.GetLightmapWidth()/chunk_size;x++)
         {
             std::shared_ptr<PreInfoJob> job = std::make_shared<PreInfoJob>(
                 x*chunk_size,
                 y*chunk_size,
                 (x+1)*chunk_size,
                 (y+1)*chunk_size,
-                m_current_lightmap_handle,
+                lightmap,
                 this);
 
             m_jobs.push_back(job);

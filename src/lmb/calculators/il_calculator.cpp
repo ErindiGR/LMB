@@ -24,20 +24,19 @@ ILJob::ILJob(
 
 void ILJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
 {
-    auto &lightmap = m_calc->GetRealLightmap(m_lightmap);
-    auto &temp_lightmap = m_calc->GetTempLightmapColor(m_lightmap);
+    CalcLightmapHelper calc_helper(m_lightmap,m_calc);
 
-    if(lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
+    if(calc_helper.GetRealFlags(x,y) == Lightmap::EFlags::UnUsed)
         return;
 
     const vec2 pixel_pos = GetPixelCenter(x,y);
 
     const vec4 gi = ((IndirectLightCalculator*) m_calc)->CalcPixel(
-        lightmap->GetPos().GetPixel(pixel_pos.x,pixel_pos.y),
-        lightmap->GetNorm().GetPixel(pixel_pos.x,pixel_pos.y),
+        calc_helper.GetRealPos(pixel_pos.x,pixel_pos.y),
+        calc_helper.GetRealNorm(pixel_pos.x,pixel_pos.y),
         m_bounce);
 
-    temp_lightmap->SetPixel(x,y,gi);
+    calc_helper.SetColor(x,y,gi);
 }
 
 void IndirectLightCalculator::StartCalc(const size_t lightmap)
@@ -46,21 +45,22 @@ void IndirectLightCalculator::StartCalc(const size_t lightmap)
 
     DEBUG_LOG("Started Calculating AO.\n");
 
+    CalcLightmapHelper calc_helper(lightmap,this);
 
-    size_t chunk_size = std::max((int)(GetLightmapWidth()/(JobManager::GetNumThreads()*2)),1);
+    size_t chunk_size = 32;
 
     for(int i=0;i<m_config.num_bounces;i++)
     {
-        for(size_t x=0;x<GetLightmapWidth()/chunk_size;x++)
+        for(size_t x=0;x<calc_helper.GetLightmapWidth()/chunk_size;x++)
         {
-            for(size_t y=0;y<GetLightmapHeight()/chunk_size;y++)
+            for(size_t y=0;y<calc_helper.GetLightmapHeight()/chunk_size;y++)
             {
                 std::shared_ptr<Job> job = std::make_shared<ILJob>(
                     x*chunk_size,
                     y*chunk_size,
                     (x+1)*chunk_size,
                     (y+1)*chunk_size,
-                    m_current_lightmap_handle,
+                    lightmap,
                     this,
                     i);
 

@@ -281,7 +281,7 @@ public:
 		}
 	}
 
-	static void FlipV(Bitmap<vec4> &out_bitmap)
+	static void FlipVertically(Bitmap<vec4> &out_bitmap)
 	{
 		Bitmap<glm::vec4> ret(out_bitmap.GetWidth(),out_bitmap.GetHeight());
 

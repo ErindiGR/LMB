@@ -11,60 +11,6 @@ namespace LMB
 {
 
 
-
-DLJob::DLJob( 
-    const bitmap_size_t x_start,
-    const bitmap_size_t y_start,
-    const bitmap_size_t x_end,
-    const bitmap_size_t y_end,
-    const size_t lightmap,
-    DirectLightCalculator* calc)
-    : LightmapChunkJob(x_start,y_start,x_end,y_end,lightmap,calc)
-{
-}
-
-void DLJob::CalculatePixel(const bitmap_size_t x,const bitmap_size_t y)
-{
-    auto &lightmap = m_calc->GetRealLightmap(m_lightmap);
-    auto &temp_lightmap = m_calc->GetTempLightmapColor(m_lightmap);
-
-    if(lightmap->GetFlags().GetPixel(x,y) == Lightmap::EFlags::UnUsed)
-        return;
-
-    const vec2 pixel_pos = GetPixelCenter(x,y);
-
-    const vec4 direct = ((DirectLightCalculator*) m_calc)->CalcPixel(
-        lightmap->GetPos().GetPixel(pixel_pos.x,pixel_pos.y),
-        lightmap->GetNorm().GetPixel(pixel_pos.x,pixel_pos.y));
-    
-    temp_lightmap->SetPixel(x,y,direct);
-}
-
-void DirectLightCalculator::StartCalc(const size_t lightmap)
-{
-    Calculator::StartCalc(lightmap);
-
-    bitmap_size_t chunk_size = std::max(
-        (int)(GetLightmapWidth()/(JobManager::GetNumThreads()*2)),1);
-
-    for(bitmap_size_t x=0;x<GetLightmapWidth()/chunk_size;x++)
-    {
-        for(bitmap_size_t y=0;y<GetLightmapHeight()/chunk_size;y++)
-        {
-            std::shared_ptr<DLJob> job = std::make_shared<DLJob>(
-                x*chunk_size,
-                y*chunk_size,
-                (x+1)*chunk_size,
-                (y+1)*chunk_size,
-                m_current_lightmap_handle,
-                this);
-
-            m_jobs.push_back(job);
-            JobManager::Push(std::static_pointer_cast<Job>(job));
-        }
-    }
-}
-
 vec4 DirectLightCalculator::CalcPixel(
     const vec3 &world_pos,
     const vec3 &world_norm)
@@ -169,7 +115,7 @@ const vec3 DirectLightCalculator::CalcDirectionalLight(
 
     ret *= ray_contribute;
 
-    return vec3(ret);
+    return ret;
 }
 
 const vec3 DirectLightCalculator::CalcPointLight(
@@ -202,7 +148,6 @@ const vec3 DirectLightCalculator::CalcPointLight(
         {
             const vec3 line = light_pos-world_pos;
             const vec3 dir = glm::normalize(line);
-            const real_t dist = glm::length(line);
             
             const real_t n_dot_dir = glm::max(glm::dot(world_norm,dir),to_real(0.0));
             
@@ -225,46 +170,57 @@ const vec3 DirectLightCalculator::CalcEmission(
     const vec3 &world_pos,
     const vec3 &world_norm)
 {
-    const std::vector<Ray> rays = std::move(GenRays(world_pos,world_norm));
 
-    const real_t ray_contribute = to_real(1.0) / (real_t)rays.size();
-
-    auto solver = GetLMB()->GetSolver();
+    int num_samples = 0;
 
     vec3 ret(0);
 
-    for(size_t ray_i=0;ray_i<rays.size();ray_i++)
+    auto solver = GetLMB()->GetSolver();
+
+    for(int num_loops=0;num_loops<8;num_loops++)
     {
-        auto &ray = rays[ray_i];
+        const std::vector<Ray> rays = std::move(GenRays(world_pos,world_norm));
 
-        Solver::SHitInfo hit;
+        num_samples += rays.size();
 
-        if(solver->Intersect(ray,hit))
+        for(size_t ray_i=0;ray_i<rays.size();ray_i++)
         {
-            auto &hit_triangle = GetLMB()->GetTriangles()[hit.triangle_index];
+            auto &ray = rays[ray_i];
 
-            auto &triangle_info = GetLMB()->GetTrianglesInfo()[hit_triangle.GetInfo()];
+            Solver::SHitInfo hit;
 
-            const vec2 hit_uv = hit_triangle.BarycentricToLightmapUV(hit.uvw);
-
-            vec3 hit_light(0);
-
-            if(triangle_info.HasEmissive())
+            if(solver->Intersect(ray,hit))
             {
-                hit_light += vec3(triangle_info.GetEmissive().Get()->GetPixel(hit_uv.x,hit_uv.y));
+                auto &hit_triangle = GetLMB()->GetTriangles()[hit.triangle_index];
+
+                auto &triangle_info = GetLMB()->GetTrianglesInfo()[hit_triangle.GetInfo()];
+
+                const vec2 hit_uv = hit_triangle.BarycentricToLightmapUV(hit.uvw);
+
+                vec3 hit_light(0);
+
+                if(triangle_info.HasEmissive())
+                {
+                    hit_light += vec3(triangle_info.GetEmissive().Get()->GetPixel(hit_uv.x,hit_uv.y));
+                }
+
+                hit_light += CalcTransparentEmission(ray,hit);
+
+                const real_t n_dot_l = glm::min(glm::max(glm::dot(world_norm,ray.GetDir()),to_real(0.0)),to_real(1.0));
+                
+                const vec3 received_light = hit_light * n_dot_l;
+
+                ret += received_light;
             }
-
-            hit_light += CalcTransparentEmission(ray,hit);
-
-            const real_t n_dot_l = glm::min(glm::max(glm::dot(world_norm,ray.GetDir()),to_real(0.0)),to_real(1.0));
-            
-            const vec3 received_light = hit_light * n_dot_l;
-
-            ret += received_light;
+        }
+        
+        if(glm::length(ret) > 0.0)
+        {
+            const real_t ray_contribute = to_real(1.0) / to_real(num_samples);
+            ret *= ray_contribute;
+            break;
         }
     }
-
-    ret *= ray_contribute;
 
     return ret;
 }

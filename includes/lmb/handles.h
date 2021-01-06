@@ -17,7 +17,7 @@ class NSHandle : public LMBObject
 
 public:
 
-    NSHandle(size_t index)
+    explicit NSHandle(size_t index)
     {
         m_index = index + 1;
     }
@@ -50,7 +50,7 @@ class LightmapHandle : public NSHandle
 
 public:
 
-    LightmapHandle(size_t index)
+    explicit LightmapHandle(size_t index)
     : NSHandle(index)
     {
     }
@@ -69,7 +69,7 @@ class BitmapHandle : public NSHandle
 
 public:
 
-    BitmapHandle(size_t index)
+    explicit BitmapHandle(size_t index)
     : NSHandle(index)
     {
     }

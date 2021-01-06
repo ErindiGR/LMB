@@ -25,6 +25,7 @@ public:
 	{
 		m_has_normals = false;
 		m_has_uv2 = false;
+		m_info = 0;
 	}
 
 	inline void SetPos(const std::array<vec3,3>& positions)

@@ -30,17 +30,29 @@ using namespace LMB;
 
 std::shared_ptr<Bitmap<vec4>> LoadBitmap(const char * filename)
 {
-	int texture_w =0,texture_h=0,texture_c=0;
+	int texture_width = 0;
+	int texture_height = 0;
+	int texture_channels = 0;
+	const int required_num_channels = 4;
 
-	stbi_uc* texture_data = stbi_load(filename,&texture_w,&texture_h,&texture_c,4);
+	stbi_uc* texture_data = stbi_load(
+		filename,
+		&texture_width,
+		&texture_height,
+		&texture_channels,
+		required_num_channels);
 
-	Bitmap<RGBA8> texture(texture_w,texture_h);
+	Bitmap<RGBA8> texture(texture_width,texture_height);
 
-	std::memcpy(texture.GetData(),texture_data,texture_w*texture_h*texture_c);
+	std::memcpy(
+		texture.GetData(),
+		texture_data,
+		texture_width*texture_height*texture_channels);
 
-	std::shared_ptr<Bitmap<vec4>> ret = std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture));
+	std::shared_ptr<Bitmap<vec4>> ret = 
+		std::make_shared<Bitmap<vec4>>(BitmapUtils::ToVec4(texture));
 	
-	BitmapUtils::FlipV(*ret.get());
+	BitmapUtils::FlipVertically(*ret.get());
 
 	return ret;
 }
@@ -65,17 +77,16 @@ int main()
 
 	//Load textures
 	auto texture_albedo = lmb->AddBitmap(LoadBitmap(TEXTURE_ALBEDO));
-
-
 	auto texture_emissive = lmb->AddBitmap(LoadBitmap(TEXTURE_EMISSIVE));
 
+	//Multiply emission texture 
 	BitmapUtils::Multiply(*(texture_emissive.Get().get()),6);
 	
 
 	for(size_t j=0;j<obj_loader.LoadedMeshes.size();j++)
 	{
 		//Create lightmap
-		LightmapHandle lightmap = lmb->AddLightmap(256);
+		LightmapHandle lightmap = lmb->AddLightmap(64);
 
 		//Create triangle info
 		TriangleInfo triangle_info;
@@ -147,10 +158,15 @@ int main()
 
 
 	//Create Solver 
+
+#if 1
 	auto solver = std::shared_ptr<Solver>(new KDTreeSolver());
-	//auto solver = std::shared_ptr<Solver>(new GridSolver(8));
-	//auto solver = std::shared_ptr<Solver>(new DefaultSolver());
-	
+#elif 1
+	auto solver = std::shared_ptr<Solver>(new GridSolver(8));
+#else
+	auto solver = std::shared_ptr<Solver>(new DefaultSolver());
+#endif	
+
 	//Assign Solver to LMBSession
 	lmb->SetSolver(solver);
 
@@ -163,7 +179,7 @@ int main()
 	//Set the calculator blend mode default is BlendSet
 	calc->SetBlend(std::make_shared<CalcBlendAdd>());
 
-#if 1
+#if 0
 	//Create a directional light and add it to the calculator
 	Light dir_light(Light::EType::Directional);
 	dir_light.SetDir(glm::normalize(vec3(1,1,1)));
@@ -188,24 +204,22 @@ int main()
 	lmb->EndCalc();
 #endif
 
+#if 1
+	auto denoise = std::shared_ptr<Calculator>(new DenoiseCalculator(64,0.08));
+	lmb->SetCalculator(denoise);
+	printf("Calculation denoise started\n");
+	lmb->StartCalc();
+	lmb->EndCalc();
+#endif
+
 
 #if 1
-
 	auto gi_calc = std::shared_ptr<Calculator>(new IndirectLightCalculator(default_il_config));
 	gi_calc->SetBlend(std::make_shared<CalcBlendAdd>());
 	lmb->SetCalculator(gi_calc);
 	printf("Calculation IL started\n");
 	lmb->StartCalc();
 	DrawCalcResult(lmb);
-	lmb->EndCalc();
-
-#endif
-
-#if 1
-	auto denoise = std::shared_ptr<Calculator>(new DenoiseCalculator(32,4/32.0));
-	lmb->SetCalculator(denoise);
-	printf("Calculation denoise started\n");
-	lmb->StartCalc();
 	lmb->EndCalc();
 #endif
 	
@@ -216,6 +230,14 @@ int main()
 	printf("Calculation AO started\n");
 	lmb->StartCalc();
 	DrawCalcResult(lmb);
+	lmb->EndCalc();
+#endif
+
+#if 1
+	auto denoise2 = std::shared_ptr<Calculator>(new DenoiseCalculator(16,0.06));
+	lmb->SetCalculator(denoise2);
+	printf("Calculation denoise started\n");
+	lmb->StartCalc();
 	lmb->EndCalc();
 #endif
 
@@ -241,7 +263,7 @@ int main()
 	{
 		
 		auto res = BitmapUtils::ToRGBAFloat(lmb->GetLightmaps()[i]->GetColor());
-		BitmapUtils::FlipV(res);
+		BitmapUtils::FlipVertically(res);
 
 		char filename[32];
 

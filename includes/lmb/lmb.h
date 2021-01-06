@@ -32,8 +32,8 @@ public:
 public:
 
 	LMBSession()
+	:m_pre_info_calc(std::make_shared<PreInfoCalculator>())
 	{
-		m_pre_info_calc = std::make_shared<PreInfoCalculator>();
 		m_pre_info_calc->SetLMB(this);
 	}
 
@@ -41,9 +41,9 @@ public:
 
     void StartCalc();
 
-	void StartCalc(const size_t lightmap);
+	void StartCalc(const size_t lightmap) override;
 
-    void EndCalc();
+    void EndCalc() override;
 
 	const size_t AddTriangle(const Triangle& tri);
 

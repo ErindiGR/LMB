@@ -20,6 +20,13 @@ public:
       vec3     uvw;
       real_t   t;
       size_t   triangle_index;
+
+      SHitInfo():
+      uvw(0),
+      t(0),
+      triangle_index(0)
+      {
+      }
    };
 
 public:

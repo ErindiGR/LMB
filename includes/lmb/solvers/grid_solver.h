@@ -37,7 +37,7 @@ public:
      * @param num_grid_cells the number of grid cells the solver is goind to divide
      * the scene on each dimension
      */
-    GridSolver(const uint16_t num_grid_cells)
+    explicit GridSolver(const uint16_t num_grid_cells)
     : m_num_cells(num_grid_cells)
     {
     }
@@ -46,10 +46,10 @@ public:
     /**
     * @brief creates the grid and assigns the triangles to each grid cell
     */
-    void Gen();
+    void Gen() override;
     //!Solver
 
-    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const;
+    const bool Intersect(const Ray &ray,SHitInfo &out_hit_info) const override;
 
 protected:
 
